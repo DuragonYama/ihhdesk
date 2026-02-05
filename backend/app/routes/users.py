@@ -119,3 +119,39 @@ async def set_work_schedule(
     db.commit()
     
     return {"message": "Work schedule updated", "days": schedule.days}
+
+@router.patch("/{user_id}", response_model=UserResponse)
+async def update_user(
+    user_id: int,
+    update_data: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin)
+):
+    """Update user (admin only)"""
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if update_data.email is not None:
+        existing = db.query(User).filter(
+            User.email == update_data.email,
+            User.id != user_id
+        ).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already in use")
+        user.email = update_data.email
+    
+    if update_data.is_active is not None:
+        user.is_active = update_data.is_active
+    
+    if update_data.expected_weekly_hours is not None:
+        user.expected_weekly_hours = update_data.expected_weekly_hours
+    
+    if update_data.has_km_compensation is not None:
+        user.has_km_compensation = update_data.has_km_compensation
+    
+    db.commit()
+    db.refresh(user)
+    
+    return user

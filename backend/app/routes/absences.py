@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime, timedelta
 from app.database import get_db
-from app.models import User, Absence
+from app.models import User, Absence, ClockEvent
 from app.schemas import AbsenceRequest, AbsenceResponse
 from app.dependencies import get_current_user, get_current_admin
 
@@ -17,33 +17,31 @@ async def request_absence(
 ):
     """Request absence (sick/personal/vacation)"""
     
-    # Only employees can request absences
     if current_user.role != 'employee':
         raise HTTPException(status_code=403, detail="Only employees can request absences")
     
-    # Validate absence type
     if absence_data.type not in ['sick', 'personal', 'vacation']:
         raise HTTPException(
             status_code=400,
             detail="Absence type must be 'sick', 'personal', or 'vacation'"
         )
-    
-    # Check if absence already exists for this date
-    existing = db.query(Absence).filter(
+
+    open_absence = db.query(Absence).filter(
         Absence.user_id == current_user.id,
-        Absence.date == absence_data.date
+        Absence.end_date == None,
+        Absence.status == 'approved'
     ).first()
     
-    if existing:
+    if open_absence:
         raise HTTPException(
             status_code=400,
-            detail=f"Absence already exists for {absence_data.date}"
+            detail=f"You already have an open absence starting {open_absence.start_date}"
         )
-    
-    # Create absence
+
     absence = Absence(
         user_id=current_user.id,
-        date=absence_data.date,
+        start_date=absence_data.start_date,
+        end_date=None, 
         type=absence_data.type,
         reason=absence_data.reason,
         status='pending'
@@ -64,7 +62,7 @@ async def get_my_absences(
     
     absences = db.query(Absence).filter(
         Absence.user_id == current_user.id
-    ).order_by(Absence.date.desc()).all()
+    ).order_by(Absence.start_date.desc()).all()
     
     return absences
 
@@ -77,7 +75,7 @@ async def get_pending_absences(
     
     absences = db.query(Absence).filter(
         Absence.status == 'pending'
-    ).order_by(Absence.date.desc()).all()
+    ).order_by(Absence.start_date.desc()).all()
     
     return absences
 
@@ -95,7 +93,7 @@ async def get_user_absences(
     
     absences = db.query(Absence).filter(
         Absence.user_id == user_id
-    ).order_by(Absence.date.desc()).all()
+    ).order_by(Absence.start_date.desc()).all()
     
     return absences
 
@@ -120,6 +118,15 @@ async def approve_absence(
     absence.status = 'approved'
     absence.reviewed_at = datetime.now()
     absence.reviewed_by = current_user.id
+    
+    if absence.end_date is None:  
+        first_clock_in = db.query(ClockEvent).filter(
+            ClockEvent.user_id == absence.user_id,
+            ClockEvent.date > absence.start_date
+        ).order_by(ClockEvent.date.asc()).first()
+        
+        if first_clock_in:
+            absence.end_date = first_clock_in.date - timedelta(days=1)
     
     db.commit()
     db.refresh(absence)

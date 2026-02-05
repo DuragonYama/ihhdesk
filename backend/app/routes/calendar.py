@@ -95,7 +95,7 @@ async def create_event(
         )
     
     # Validate category exists if provided
-    if event_data.category_id:
+    if event_data.category_id is not None:
         category = db.query(EventCategory).filter(
             EventCategory.id == event_data.category_id
         ).first()

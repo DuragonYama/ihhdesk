@@ -78,7 +78,8 @@ class Absence(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    date = Column(Date, nullable=False, index=True)
+    start_date = Column(Date, nullable=False, index=True)
+    end_date = Column(Date, nullable=True, index=True) 
     type = Column(String, nullable=False)
     reason = Column(Text, nullable=False)
     status = Column(String, default="pending")
@@ -90,9 +91,8 @@ class Absence(Base):
     user = relationship("User", back_populates="absences", foreign_keys=[user_id])
     
     __table_args__ = (
-        UniqueConstraint('user_id', 'date', name='unique_absence_user_date'),
+        UniqueConstraint('user_id', 'start_date', name='unique_absence_user_start_date'),
     )
-
 
 class EventCategory(Base):
     __tablename__ = "event_categories"
@@ -144,4 +144,14 @@ class CompanyHoliday(Base):
     name = Column(String, nullable=False)
     date = Column(Date, unique=True, nullable=False, index=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    token = Column(String, unique=True, nullable=False, index=True)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)

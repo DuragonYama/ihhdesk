@@ -72,14 +72,16 @@ class ClockEventUpdate(BaseModel):
 
 # Absence Schemas
 class AbsenceRequest(BaseModel):
-    date: date
+    start_date: date  # ← Changed from 'date'
     type: str  # 'sick', 'personal', 'vacation'
     reason: str
+    # No end_date needed - it's open-ended!
 
 class AbsenceResponse(BaseModel):
     id: int
     user_id: int
-    date: date
+    start_date: date  # ← Changed from 'date'
+    end_date: Optional[date]  # ← NEW: nullable
     type: str
     reason: str
     status: str
