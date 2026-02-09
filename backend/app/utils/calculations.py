@@ -83,7 +83,24 @@ def calculate_user_balance(
     total_km = 0.0
     details = []
 
+    # Check if there's an ongoing sick absence from before the period
     last_sick_date = None
+    for absence in absence_records:
+        if absence.type in ['sick', 'personal']:
+            # If absence started before period and extends into it
+            if absence.start_date < start_date:
+                actual_end = absence.end_date if absence.end_date else end_date
+                if actual_end >= start_date:
+                    # Find the last scheduled sick day before period starts
+                    check_date = absence.start_date
+                    temp_last = None
+                    while check_date < start_date:
+                        if check_date.weekday() in scheduled_days and check_date not in holidays:
+                            temp_last = check_date
+                        check_date += timedelta(days=1)
+                    if temp_last:
+                        last_sick_date = temp_last
+                        break
     
     current_date = start_date
     while current_date <= end_date:

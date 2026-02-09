@@ -1,7 +1,16 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware 
 from app.routes import auth, users, clock, absences, calendar, reports, exports
 
 app = FastAPI(title="Employee Management API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Include routers with prefixes
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])

@@ -16,7 +16,28 @@ async def get_users(
 ):
     """Get all users (admin only)"""
     users = db.query(User).all()
-    return users
+    
+    # Add work_days to each user
+    result = []
+    for user in users:
+        # Get work schedule (same pattern as get_user_detail)
+        work_schedules = db.query(WorkSchedule).filter(WorkSchedule.user_id == user.id).all()
+        work_days = [ws.day_of_week for ws in work_schedules]
+        
+        user_dict = {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
+            "is_active": user.is_active,
+            "expected_weekly_hours": user.expected_weekly_hours,
+            "has_km_compensation": user.has_km_compensation,
+            "work_days": work_days
+        }
+        
+        result.append(user_dict)
+    
+    return result
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):

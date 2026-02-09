@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr
+from decimal import Decimal
 from typing import Optional, List
 from datetime import time, date, datetime
 
@@ -8,7 +9,10 @@ class UserResponse(BaseModel):
     email: str
     role: str
     is_active: bool
-    
+    expected_weekly_hours: Optional[Decimal] = None 
+    has_km_compensation: Optional[bool] = None 
+    work_days: Optional[List[int]] = None
+
     class Config:
         from_attributes = True
 
@@ -72,16 +76,16 @@ class ClockEventUpdate(BaseModel):
 
 # Absence Schemas
 class AbsenceRequest(BaseModel):
-    start_date: date  # ← Changed from 'date'
+    start_date: date
     type: str  # 'sick', 'personal', 'vacation'
     reason: str
-    # No end_date needed - it's open-ended!
 
 class AbsenceResponse(BaseModel):
     id: int
     user_id: int
-    start_date: date  # ← Changed from 'date'
-    end_date: Optional[date]  # ← NEW: nullable
+    username: Optional[str] = None  # ADDED
+    start_date: date
+    end_date: Optional[date] = None
     type: str
     reason: str
     status: str
@@ -91,6 +95,12 @@ class AbsenceResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+class ApproveAbsenceRequest(BaseModel):  # ADDED
+    message: Optional[str] = None
+
+class RejectAbsenceRequest(BaseModel):  # ADDED
+    message: Optional[str] = None
 
 # Event Category Schemas
 class EventCategoryCreate(BaseModel):
@@ -153,7 +163,6 @@ class CompanyHolidayResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# Add this after CalendarEventCreate
 class CalendarEventUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
