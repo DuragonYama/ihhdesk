@@ -7,6 +7,10 @@ import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Approvals from './pages/Approvals';
 import Reports from './pages/Reports';
+import Calendar from './pages/Calendar';
+import Timesheet from './pages/Timesheet';
+import Email from './pages/Email';
+import AbsenceManagement from './pages/AbsenceManagement';
 
 const queryClient = new QueryClient();
 
@@ -68,7 +72,31 @@ function AppRoutes() {
         path="/calendar"
         element={
           <ProtectedRoute>
-            <div className="text-white">Calendar page - coming soon</div>
+            <Calendar />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/timesheet"
+        element={
+          <ProtectedRoute>
+            <Timesheet />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/email"
+        element={
+          <ProtectedRoute>
+            <Email />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/absences"
+        element={
+          <ProtectedRoute>
+            <AbsenceManagement />
           </ProtectedRoute>
         }
       />

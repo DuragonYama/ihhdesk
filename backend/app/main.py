@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware 
-from app.routes import auth, users, clock, absences, calendar, reports, exports
+from app.routes import auth, users, clock, absences, calendar, reports, exports, email
 
 app = FastAPI(title="Employee Management API")
 
@@ -20,6 +20,7 @@ app.include_router(absences.router, prefix="/api/absences", tags=["Absences"])
 app.include_router(calendar.router, prefix="/api/calendar", tags=["Calendar"])
 app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
 app.include_router(exports.router, prefix="/api/exports", tags=["Exports"])
+app.include_router(email.router, prefix="/api/email", tags=["Email"])
 
 @app.get("/")
 async def root():

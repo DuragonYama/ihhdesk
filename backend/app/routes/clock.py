@@ -169,6 +169,39 @@ async def get_today_active(
     
     return result
 
+@router.get("/all-events")
+async def get_all_clock_events(
+    start_date: date_type = Query(...),
+    end_date: date_type = Query(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin)
+):
+    """Get ALL clock events for ALL employees in date range (admin only)"""
+
+    events = db.query(ClockEvent).filter(
+        ClockEvent.date >= start_date,
+        ClockEvent.date <= end_date
+    ).order_by(ClockEvent.date.desc()).all()
+
+    # Add username to each event
+    result = []
+    for event in events:
+        user = db.query(User).filter(User.id == event.user_id).first()
+        event_dict = {
+            "id": event.id,
+            "user_id": event.user_id,
+            "username": user.username if user else "Unknown",
+            "date": event.date,
+            "clock_in": event.clock_in,
+            "clock_out": event.clock_out,
+            "came_by_car": event.came_by_car,
+            "parking_cost": float(event.parking_cost) if event.parking_cost else None,
+            "km_driven": float(event.km_driven) if event.km_driven else None,
+        }
+        result.append(event_dict)
+
+    return result
+
 @router.get("/user/{user_id}/events", response_model=List[ClockEventResponse])
 async def get_user_clock_events(
     user_id: int,

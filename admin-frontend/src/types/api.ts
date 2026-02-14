@@ -62,6 +62,29 @@ export interface ApproveRejectRequest {
   message?: string;
 }
 
+export interface UpdateAbsenceRequest {
+  start_date?: string;
+  reason?: string;
+}
+
+export interface AdminCreateAbsenceRequest {
+  user_id: number;
+  start_date: string;
+  end_date?: string;
+  type: 'sick' | 'personal' | 'vacation';
+  reason: string;
+  auto_approve?: boolean;
+}
+
+export interface BulkAbsenceRequest {
+  user_ids: number[];
+  start_date: string;
+  end_date?: string | null;
+  absence_type: 'sick' | 'personal' | 'vacation';
+  reason: string;
+  auto_approve: boolean;
+}
+
 export interface EmployeeBalance {
   user_id: number;
   username: string;
@@ -107,4 +130,99 @@ export interface TodayStatus {
     username: string;
     email: string;
   }>;
+}
+
+export interface EventCategory {
+  id: number;
+  name: string;
+  color: string;
+  created_at: string;
+}
+
+export interface CalendarEvent {
+  id: number;
+  title: string;
+  description: string | null;
+  category_id: number | null;
+  date: string;
+  time_start: string | null;
+  time_end: string | null;
+  visibility: string;
+  status: string;
+  created_by: number;
+  created_at: string;
+  reviewed_at: string | null;
+  reviewed_by: number | null;
+}
+
+export interface CompanyHoliday {
+  id: number;
+  name: string;
+  date: string;
+  created_by: number;
+  created_at: string;
+}
+
+export interface CreateCategoryRequest {
+  name: string;
+  color: string;
+}
+
+export interface CreateEventRequest {
+  title: string;
+  description?: string;
+  category_id?: number;
+  date: string;
+  time_start?: string;
+  time_end?: string;
+  visibility: 'all' | 'specific';
+  assigned_user_ids?: number[];
+}
+
+export interface CreateHolidayRequest {
+  name: string;
+  date: string;
+}
+
+export interface ClockEvent {
+  id: number;
+  user_id: number;
+  date: string;
+  clock_in: string;
+  clock_out: string;
+  came_by_car: boolean;
+  parking_cost: number | null;
+  km_driven: number | null;
+}
+
+export interface CreateClockEventRequest {
+  user_id: number;
+  event_date: string;
+  clock_in_time: string;
+  clock_out_time: string;
+  came_by_car?: boolean;
+  parking_cost?: number | null;
+  km_driven?: number | null;
+}
+
+export interface UpdateClockEventRequest {
+  clock_in?: string;
+  clock_out?: string;
+  came_by_car?: boolean;
+  parking_cost?: number | null;
+  km_driven?: number | null;
+}
+
+export interface BulkEmailRequest {
+  employee_ids: number[];
+  external_emails: string[];
+  subject: string;
+  message: string;
+}
+
+export interface BulkEmailResponse {
+  total_recipients: number;
+  successful_count: number;
+  failed_emails: string[];
+  success: boolean;
 }

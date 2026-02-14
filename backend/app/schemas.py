@@ -77,6 +77,7 @@ class ClockEventUpdate(BaseModel):
 # Absence Schemas
 class AbsenceRequest(BaseModel):
     start_date: date
+    end_date: Optional[date] = None  # Multi-day support
     type: str  # 'sick', 'personal', 'vacation'
     reason: str
 
@@ -101,6 +102,17 @@ class ApproveAbsenceRequest(BaseModel):  # ADDED
 
 class RejectAbsenceRequest(BaseModel):  # ADDED
     message: Optional[str] = None
+
+class UpdateAbsenceRequest(BaseModel):
+    start_date: Optional[date] = None
+    reason: Optional[str] = None
+
+class AdminCreateAbsenceRequest(BaseModel):
+    user_id: int
+    start_date: date
+    type: str  # 'sick', 'personal', 'vacation'
+    reason: str
+    auto_approve: bool = False
 
 # Event Category Schemas
 class EventCategoryCreate(BaseModel):
@@ -172,3 +184,16 @@ class CalendarEventUpdate(BaseModel):
     time_end: Optional[time] = None
     visibility: Optional[str] = None
     assigned_user_ids: Optional[List[int]] = None
+
+# Email Schemas
+class BulkEmailRequest(BaseModel):
+    employee_ids: List[int]
+    external_emails: List[EmailStr]
+    subject: str
+    message: str
+
+class BulkEmailResponse(BaseModel):
+    total_recipients: int
+    successful_count: int
+    failed_emails: List[str]
+    success: bool

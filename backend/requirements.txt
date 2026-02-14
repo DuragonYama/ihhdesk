@@ -9,3 +9,4 @@ python-multipart==0.0.22
 pydantic-settings==2.12.0
 aiosmtplib==5.1.0
 sendgrid==6.12.5
+holidays==0.39

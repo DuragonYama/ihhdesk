@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
-from datetime import datetime, timedelta
+from typing import List, Optional
+from datetime import datetime, timedelta, date as date_type
 from app.database import get_db
 from app.models import User, Absence, ClockEvent
 from app.schemas import (
-    AbsenceRequest, 
-    AbsenceResponse, 
-    ApproveAbsenceRequest, 
-    RejectAbsenceRequest
+    AbsenceRequest,
+    AbsenceResponse,
+    ApproveAbsenceRequest,
+    RejectAbsenceRequest,
+    UpdateAbsenceRequest,
+    AdminCreateAbsenceRequest
 )
 from app.dependencies import get_current_user, get_current_admin
 from app.utils.email import send_email
@@ -62,7 +64,7 @@ async def request_absence(
     absence = Absence(
         user_id=current_user.id,
         start_date=absence_data.start_date,
-        end_date=None, 
+        end_date=absence_data.end_date,
         type=absence_data.type,
         reason=absence_data.reason,
         status='pending'
@@ -71,8 +73,114 @@ async def request_absence(
     db.add(absence)
     db.commit()
     db.refresh(absence)
-    
+
     return absence
+
+@router.post("/admin", response_model=AbsenceResponse)
+async def admin_create_absence(
+    absence_data: AdminCreateAbsenceRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin)
+):
+    """Create absence for employee (admin only)"""
+
+    # Validate user exists
+    user = db.query(User).filter(User.id == absence_data.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Validate absence type
+    if absence_data.type not in ['sick', 'personal', 'vacation']:
+        raise HTTPException(
+            status_code=400,
+            detail="Absence type must be 'sick', 'personal', or 'vacation'"
+        )
+
+    # Create absence
+    absence = Absence(
+        user_id=absence_data.user_id,
+        start_date=absence_data.start_date,
+        end_date=None,
+        type=absence_data.type,
+        reason=absence_data.reason,
+        status='approved' if absence_data.auto_approve else 'pending',
+        reviewed_at=datetime.now() if absence_data.auto_approve else None,
+        reviewed_by=current_user.id if absence_data.auto_approve else None
+    )
+
+    db.add(absence)
+    db.commit()
+    db.refresh(absence)
+
+    return absence
+
+@router.post("/bulk")
+async def create_bulk_absences(
+    user_ids: List[int],
+    start_date: date_type,
+    end_date: Optional[date_type] = None,
+    absence_type: str = "vacation",
+    reason: str = "Bedrijfsvakantie",
+    auto_approve: bool = True,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin)
+):
+    """Create absences for multiple employees at once (admin only)"""
+
+    # Validate type
+    if absence_type not in ['sick', 'personal', 'vacation']:
+        raise HTTPException(status_code=400, detail="Invalid absence type")
+
+    # Validate dates
+    if end_date and end_date < start_date:
+        raise HTTPException(status_code=400, detail="End date must be after start date")
+
+    created_absences = []
+    failed_users = []
+
+    for user_id in user_ids:
+        try:
+            # Check user exists and is active
+            user = db.query(User).filter(
+                User.id == user_id,
+                User.role == 'employee',
+                User.is_active == True
+            ).first()
+
+            if not user:
+                failed_users.append(user_id)
+                continue
+
+            # Create absence
+            absence = Absence(
+                user_id=user_id,
+                start_date=start_date,
+                end_date=end_date,
+                type=absence_type,
+                reason=reason,
+                status='approved' if auto_approve else 'pending',
+            )
+
+            if auto_approve:
+                absence.reviewed_at = datetime.now()
+                absence.reviewed_by = current_user.id
+
+            db.add(absence)
+            created_absences.append(user_id)
+
+        except Exception as e:
+            failed_users.append(user_id)
+            continue
+
+    db.commit()
+
+    return {
+        "message": f"Created {len(created_absences)} absences",
+        "created_count": len(created_absences),
+        "failed_count": len(failed_users),
+        "created_users": created_absences,
+        "failed_users": failed_users
+    }
 
 @router.get("/my-absences", response_model=List[AbsenceResponse])
 async def get_my_absences(
@@ -93,11 +201,15 @@ async def get_pending_absences(
     current_user: User = Depends(get_current_admin)
 ):
     """Get all pending absence requests (admin only)"""
-    
-    absences = db.query(Absence).filter(
-        Absence.status == 'pending'
+
+    # Join with User to filter only active users
+    absences = db.query(Absence).join(
+        User, Absence.user_id == User.id
+    ).filter(
+        Absence.status == 'pending',
+        User.is_active == True
     ).order_by(Absence.created_at.desc()).all()
-    
+
     # Add username to each absence
     result = []
     for absence in absences:
@@ -116,7 +228,37 @@ async def get_pending_absences(
             "reviewed_by": absence.reviewed_by
         }
         result.append(absence_dict)
-    
+
+    return result
+
+@router.get("/all", response_model=List[AbsenceResponse])
+async def get_all_absences(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin)
+):
+    """Get ALL absences for ALL employees (admin only)"""
+
+    absences = db.query(Absence).order_by(Absence.created_at.desc()).all()
+
+    # Add username to each absence
+    result = []
+    for absence in absences:
+        user = db.query(User).filter(User.id == absence.user_id).first()
+        absence_dict = {
+            "id": absence.id,
+            "user_id": absence.user_id,
+            "username": user.username if user else "Unknown",
+            "start_date": absence.start_date,
+            "end_date": absence.end_date,
+            "type": absence.type,
+            "reason": absence.reason,
+            "status": absence.status,
+            "created_at": absence.created_at,
+            "reviewed_at": absence.reviewed_at,
+            "reviewed_by": absence.reviewed_by
+        }
+        result.append(absence_dict)
+
     return result
 
 @router.get("/user/{user_id}", response_model=List[AbsenceResponse])
@@ -289,6 +431,30 @@ HR Team
         body=email_body
     )
     
+    return absence
+
+@router.patch("/{absence_id}", response_model=AbsenceResponse)
+async def update_absence(
+    absence_id: int,
+    request: UpdateAbsenceRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin)
+):
+    """Update absence (admin only)"""
+
+    absence = db.query(Absence).filter(Absence.id == absence_id).first()
+    if not absence:
+        raise HTTPException(status_code=404, detail="Absence not found")
+
+    # Update fields if provided
+    if request.start_date is not None:
+        absence.start_date = request.start_date
+    if request.reason is not None:
+        absence.reason = request.reason
+
+    db.commit()
+    db.refresh(absence)
+
     return absence
 
 @router.delete("/{absence_id}")

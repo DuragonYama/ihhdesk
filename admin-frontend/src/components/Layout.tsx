@@ -23,15 +23,18 @@ export default function Layout({ children }: LayoutProps) {
     { name: 'Goedkeuringen', path: '/approvals', icon: '✓' },
     { name: 'Rapporten', path: '/reports', icon: '📄' },
     { name: 'Kalender', path: '/calendar', icon: '📅' },
+    { name: 'Uurregistratie', path: '/timesheet', icon: '🕐' },
+    { name: 'Verlofbeheer', path: '/absences', icon: '📋' },
+    { name: 'Email', path: '/email', icon: '✉️' },
   ];
 
   return (
-    <div className="min-h-screen bg-ofa-bg-dark flex">
-      {/* Sidebar */}
+    <div className="flex h-screen bg-ofa-bg-dark">
+      {/* Sidebar - Fixed */}
       <aside
-        className={`${
+        className={`fixed left-0 top-0 h-screen ${
           sidebarOpen ? 'w-64' : 'w-20'
-        } bg-ofa-bg border-r border-neutral-800 transition-all duration-300 flex flex-col`}
+        } bg-ofa-bg border-r border-neutral-800 transition-all duration-300 flex flex-col overflow-y-auto`}
       >
         {/* Logo */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-neutral-800">
@@ -91,28 +94,12 @@ export default function Layout({ children }: LayoutProps) {
         )}
       </aside>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col">
-        {/* Top bar */}
-        <header className="h-16 bg-ofa-bg border-b border-neutral-800 flex items-center justify-between px-6">
-          <h2 className="text-xl font-semibold text-white">
-            {navigation.find((item) => item.path === location.pathname)?.name || 'Dashboard'}
-          </h2>
-
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="lg:hidden text-gray-400 hover:text-white"
-          >
-            ☰
-          </button>
-        </header>
-
-        {/* Page content */}
-        <main className="flex-1 overflow-auto p-6">
+      {/* Main Content - Scrollable */}
+      <main className={`${sidebarOpen ? 'ml-64' : 'ml-20'} flex-1 overflow-y-auto transition-all duration-300`}>
+        <div className="p-8">
           {children}
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

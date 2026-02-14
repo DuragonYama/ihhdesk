@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
+from holidays import country_holidays
 from app.database import get_db
 from app.models import User, EventCategory, CalendarEvent, EventAssignment, CompanyHoliday
 from app.schemas import (
@@ -12,6 +13,21 @@ from app.schemas import (
 from app.dependencies import get_current_user, get_current_admin
 
 router = APIRouter()
+
+# Dutch holiday name translations
+DUTCH_HOLIDAY_NAMES = {
+    "New Year's Day": "Nieuwjaarsdag",
+    "Good Friday": "Goede Vrijdag",
+    "Easter Sunday": "Eerste Paasdag",
+    "Easter Monday": "Tweede Paasdag",
+    "King's Day": "Koningsdag",
+    "Liberation Day": "Bevrijdingsdag",
+    "Ascension Day": "Hemelvaartsdag",
+    "Whit Sunday": "Eerste Pinksterdag",
+    "Whit Monday": "Tweede Pinksterdag",
+    "Christmas Day": "Eerste Kerstdag",
+    "Boxing Day": "Tweede Kerstdag",
+}
 
 # ============================================
 # EVENT CATEGORIES
@@ -324,7 +340,7 @@ async def delete_event(
     
     db.delete(event)
     db.commit()
-    
+
     return {"message": "Event deleted successfully"}
 
 # ============================================
@@ -362,6 +378,57 @@ async def create_holiday(
     
     return holiday
 
+@router.post("/holidays/import-dutch/{year}")
+async def import_dutch_holidays(
+    year: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin)
+):
+    """Import official Dutch holidays for a year (admin only)"""
+
+    if year < 2020 or year > 2030:
+        raise HTTPException(
+            status_code=400,
+            detail="Year must be between 2020 and 2030"
+        )
+
+    # Get Dutch holidays for the year
+    nl_holidays = country_holidays('NL', years=year)
+
+    created_count = 0
+    skipped_count = 0
+
+    for date, name in nl_holidays.items():
+        # Translate to Dutch
+        dutch_name = DUTCH_HOLIDAY_NAMES.get(name, name)
+
+        # Check if holiday already exists
+        existing = db.query(CompanyHoliday).filter(
+            CompanyHoliday.date == date
+        ).first()
+
+        if existing:
+            skipped_count += 1
+            continue
+
+        # Create holiday with Dutch name
+        holiday = CompanyHoliday(
+            name=dutch_name,
+            date=date,
+            created_by=current_user.id
+        )
+        db.add(holiday)
+        created_count += 1
+
+    db.commit()
+
+    return {
+        "message": f"Imported {created_count} Dutch holidays for {year}",
+        "created": created_count,
+        "skipped": skipped_count,
+        "year": year
+    }
+
 @router.get("/holidays", response_model=List[CompanyHolidayResponse])
 async def get_holidays(
     db: Session = Depends(get_db),
@@ -379,12 +446,22 @@ async def delete_holiday(
     current_user: User = Depends(get_current_admin)
 ):
     """Delete company holiday (admin only)"""
-    
+
+    from datetime import datetime
+
     holiday = db.query(CompanyHoliday).filter(CompanyHoliday.id == holiday_id).first()
     if not holiday:
         raise HTTPException(status_code=404, detail="Holiday not found")
-    
+
+    # Prevent deleting past holidays
+    today = datetime.now().date()
+    if holiday.date < today:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete past holidays - this would affect balance calculations"
+        )
+
     db.delete(holiday)
     db.commit()
-    
+
     return {"message": "Holiday deleted successfully"}
