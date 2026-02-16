@@ -5,17 +5,21 @@ from app.database import Base
 
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, nullable=False, index=True)
     email = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
     role = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
-    
+
     expected_weekly_hours = Column(DECIMAL(5, 2), nullable=True)
     has_km_compensation = Column(Boolean, default=False)
-    
+
+    # Password reset fields
+    reset_token = Column(String, nullable=True)
+    reset_token_expires = Column(DateTime, nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
 
@@ -61,7 +65,10 @@ class ClockEvent(Base):
     came_by_car = Column(Boolean, default=False)
     parking_cost = Column(DECIMAL(10, 2), nullable=True)
     km_driven = Column(DECIMAL(10, 2), nullable=True)
-    
+
+    status = Column(String, default='approved')  # 'pending' or 'approved'
+    requested_reason = Column(Text, nullable=True)  # Reason for non-scheduled day
+
     created_at = Column(DateTime, default=datetime.utcnow)
     modified_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     modified_by = Column(Integer, ForeignKey("users.id"), nullable=True)

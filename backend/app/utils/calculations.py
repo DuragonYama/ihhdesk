@@ -28,8 +28,15 @@ def calculate_user_balance(
     scheduled_days_records = db.query(WorkSchedule).filter(
         WorkSchedule.user_id == user_id
     ).all()
-    scheduled_days = {ws.day_of_week for ws in scheduled_days_records}
-    
+    # These are JavaScript day numbers (0=Sunday, 1=Monday, etc.)
+    js_scheduled_days = {ws.day_of_week for ws in scheduled_days_records}
+
+    # Convert to Python day numbers (0=Monday, 1=Tuesday, etc.)
+    # Formula: (js_day - 1) % 7
+    scheduled_days = {(js_day - 1) % 7 for js_day in js_scheduled_days}
+
+    print(f"[CONVERSION] calculate_user_balance user_id={user_id}: JS days: {js_scheduled_days} → Python days: {scheduled_days}")
+
     if not scheduled_days or not user.expected_weekly_hours:
         return {
             'error': 'No work schedule or expected hours set',
@@ -81,6 +88,7 @@ def calculate_user_balance(
     missing_hours = 0.0
     total_parking = 0.0
     total_km = 0.0
+    total_hours_worked = 0.0  # Track actual hours worked
     details = []
 
     # Check if there's an ongoing sick absence from before the period
@@ -116,6 +124,7 @@ def calculate_user_balance(
                 clock_out_dt = datetime.combine(current_date, clock_event.clock_out)
                 hours_worked = (clock_out_dt - clock_in_dt).total_seconds() / 3600
 
+                total_hours_worked += hours_worked  # Track actual work
                 extra_hours += hours_worked
 
                 if clock_event.parking_cost:
@@ -160,6 +169,8 @@ def calculate_user_balance(
             clock_in_dt = datetime.combine(current_date, clock_event.clock_in)
             clock_out_dt = datetime.combine(current_date, clock_event.clock_out)
             hours_worked = (clock_out_dt - clock_in_dt).total_seconds() / 3600
+
+            total_hours_worked += hours_worked  # Track actual work
 
             if clock_event.parking_cost:
                 total_parking += float(clock_event.parking_cost)
@@ -270,6 +281,7 @@ def calculate_user_balance(
         'expected_weekly_hours': float(user.expected_weekly_hours),
         'hours_per_scheduled_day': round(hours_per_day, 2),
         'scheduled_days': sorted(list(scheduled_days)),
+        'total_hours_worked': round(total_hours_worked, 2),  # Actual hours from clock events
         'extra_hours': round(extra_hours, 2),
         'missing_hours': round(missing_hours, 2),
         'balance': round(extra_hours - missing_hours, 2),

@@ -105,12 +105,13 @@ export default function Login() {
                 <span className="ml-2 text-sm text-gray-300">Onthoud mij</span>
               </label>
 
-              
-              <a href="/forgot-password"
+              <button
+                type="button"
+                onClick={() => navigate('/forgot-password')}
                 className="text-sm text-ofa-red hover:text-ofa-red-hover transition"
               >
                 Wachtwoord vergeten?
-              </a>
+              </button>
             </div>
 
             <button

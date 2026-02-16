@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from datetime import datetime, timedelta
 import secrets
+import os
 from app.database import get_db
 from app.models import User, PasswordResetToken
 from app.schemas import UserResponse
@@ -76,27 +77,34 @@ async def forgot_password(request: PasswordResetRequest, db: Session = Depends(g
     
     db.add(reset_token)
     db.commit()
-    
-    # Send email
-    reset_link = f"{settings.FRONTEND_URL}/reset-password?token={token}"
-    
-    email_body = f"""
-    Hi {user.username},
-    
-    You requested a password reset.
-    
-    Click here to reset your password:
-    {reset_link}
-    
-    This link expires in 1 hour.
-    
-    If you didn't request this, ignore this email.
-    """
-    
+
+    # Use frontend URLs from settings (configured via .env)
+    is_admin = user.role in ['admin', 'developer']
+
+    if is_admin:
+        reset_link = f"{settings.ADMIN_FRONTEND_URL}/reset-password?token={token}"
+    else:
+        reset_link = f"{settings.EMPLOYEE_FRONTEND_URL}/reset-password?token={token}"
+
+    email_body = f"""Hallo {user.username},
+
+Je hebt een wachtwoord reset aangevraagd.
+
+Klik op de onderstaande link om je wachtwoord te resetten:
+{reset_link}
+
+Deze link is 1 uur geldig.
+
+Als je deze reset niet hebt aangevraagd, negeer dan deze email.
+
+Groeten,
+HR Team
+"""
+
     await send_email(
         to_email=user.email,
-        subject="Password Reset Request",
-        body=email_body
+        subject="Wachtwoord Reset",
+        body=email_body.strip()
     )
     
     return {"message": "If email exists, reset link has been sent"}

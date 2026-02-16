@@ -53,6 +53,7 @@ class ClockInRequest(BaseModel):
     came_by_car: bool = False
     parking_cost: Optional[float] = None
     km_driven: Optional[float] = None
+    reason: Optional[str] = None  # For non-scheduled days
 
 class ClockEventResponse(BaseModel):
     id: int
@@ -63,7 +64,9 @@ class ClockEventResponse(BaseModel):
     came_by_car: bool
     parking_cost: Optional[float]
     km_driven: Optional[float]
-    
+    status: Optional[str] = 'approved'
+    requested_reason: Optional[str] = None
+
     class Config:
         from_attributes = True
 
@@ -73,6 +76,15 @@ class ClockEventUpdate(BaseModel):
     came_by_car: Optional[bool] = None
     parking_cost: Optional[float] = None
     km_driven: Optional[float] = None
+
+class CreateClockEventRequest(BaseModel):
+    date: str  # YYYY-MM-DD
+    clock_in: str  # HH:MM:SS
+    clock_out: str  # HH:MM:SS
+    came_by_car: bool
+    parking_cost: Optional[float] = None
+    km_driven: Optional[float] = None
+    reason: Optional[str] = None  # For non-scheduled days
 
 # Absence Schemas
 class AbsenceRequest(BaseModel):
@@ -98,10 +110,10 @@ class AbsenceResponse(BaseModel):
         from_attributes = True
 
 class ApproveAbsenceRequest(BaseModel):  # ADDED
-    message: Optional[str] = None
+    admin_notes: Optional[str] = None
 
 class RejectAbsenceRequest(BaseModel):  # ADDED
-    message: Optional[str] = None
+    admin_notes: Optional[str] = None
 
 class UpdateAbsenceRequest(BaseModel):
     start_date: Optional[date] = None
@@ -150,10 +162,11 @@ class CalendarEventResponse(BaseModel):
     visibility: str
     status: str
     created_by: int
+    username: Optional[str] = None  # For pending events
     created_at: datetime
     reviewed_at: Optional[datetime]
     reviewed_by: Optional[int]
-    
+
     class Config:
         from_attributes = True
 

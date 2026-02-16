@@ -1,5 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Users, CheckSquare, BarChart3, Calendar, Clock, FileText, Mail, Menu, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface LayoutProps {
@@ -12,20 +13,38 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Auto-collapse sidebar on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+
+    // Set initial state
+    handleResize();
+
+    // Listen for window resize
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
   const navigation = [
-    { name: 'Dashboard', path: '/', icon: '📊' },
-    { name: 'Medewerkers', path: '/users', icon: '👥' },
-    { name: 'Goedkeuringen', path: '/approvals', icon: '✓' },
-    { name: 'Rapporten', path: '/reports', icon: '📄' },
-    { name: 'Kalender', path: '/calendar', icon: '📅' },
-    { name: 'Uurregistratie', path: '/timesheet', icon: '🕐' },
-    { name: 'Verlofbeheer', path: '/absences', icon: '📋' },
-    { name: 'Email', path: '/email', icon: '✉️' },
+    { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+    { name: 'Medewerkers', path: '/users', icon: Users },
+    { name: 'Goedkeuringen', path: '/approvals', icon: CheckSquare },
+    { name: 'Rapporten', path: '/reports', icon: BarChart3 },
+    { name: 'Kalender', path: '/calendar', icon: Calendar },
+    { name: 'Uurregistratie', path: '/timesheet', icon: Clock },
+    { name: 'Verlofbeheer', path: '/absences', icon: FileText },
+    { name: 'Email', path: '/email', icon: Mail },
   ];
 
   return (
@@ -41,13 +60,13 @@ export default function Layout({ children }: LayoutProps) {
           {sidebarOpen ? (
             <h1 className="text-2xl font-bold text-ofa-red">OFA</h1>
           ) : (
-            <span className="text-2xl">📋</span>
+            <Menu className="w-6 h-6 text-ofa-red" />
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="text-gray-400 hover:text-white p-2 rounded hover:bg-neutral-800"
           >
-            {sidebarOpen ? '◀' : '▶'}
+            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
 
@@ -65,7 +84,7 @@ export default function Layout({ children }: LayoutProps) {
                     : 'text-gray-400 hover:bg-neutral-800 hover:text-white'
                 }`}
               >
-                <span className="text-xl">{item.icon}</span>
+                <item.icon className="w-5 h-5" />
                 {sidebarOpen && <span className="font-medium">{item.name}</span>}
               </Link>
             );

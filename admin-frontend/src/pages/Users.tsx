@@ -3,7 +3,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../utils/api';
 import type { User, CreateUserRequest } from '../types/api';
 
-const DAYS = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
+const DAYS = [
+  { label: 'Ma', value: 1 },
+  { label: 'Di', value: 2 },
+  { label: 'Wo', value: 3 },
+  { label: 'Do', value: 4 },
+  { label: 'Vr', value: 5 },
+  { label: 'Za', value: 6 },
+  { label: 'Zo', value: 0 },
+];
 
 export default function Users() {
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -123,7 +131,7 @@ function UserRow({ user, onEdit }: { user: User; onEdit: () => void }) {
           {user.work_days && user.work_days.length > 0 ? (
             user.work_days.map((day: number) => (
               <span key={day} className="px-2 py-1 bg-ofa-red/20 text-ofa-red text-xs rounded">
-                {DAYS[day]}
+                {DAYS.find(d => d.value === day)?.label || day}
               </span>
             ))
           ) : (
@@ -261,18 +269,18 @@ function CreateUserModal({ onClose, onSuccess }: { onClose: () => void; onSucces
               Werkdagen
             </label>
             <div className="grid grid-cols-7 gap-2">
-              {DAYS.map((day, index) => (
+              {DAYS.map((day) => (
                 <button
-                  key={index}
+                  key={day.value}
                   type="button"
-                  onClick={() => toggleDay(index)}
+                  onClick={() => toggleDay(day.value)}
                   className={`py-2 rounded-lg text-sm font-medium transition ${
-                    workDays.includes(index)
+                    workDays.includes(day.value)
                       ? 'bg-ofa-red text-white'
                       : 'bg-neutral-800 text-gray-400 hover:bg-neutral-700'
                   }`}
                 >
-                  {day}
+                  {day.label}
                 </button>
               ))}
             </div>
@@ -426,18 +434,18 @@ function EditUserModal({ user, onClose, onSuccess }: { user: User; onClose: () =
               Werkdagen
             </label>
             <div className="grid grid-cols-7 gap-2">
-              {DAYS.map((day, index) => (
+              {DAYS.map((day) => (
                 <button
-                  key={index}
+                  key={day.value}
                   type="button"
-                  onClick={() => toggleDay(index)}
+                  onClick={() => toggleDay(day.value)}
                   className={`py-2 rounded-lg text-sm font-medium transition ${
-                    workDays.includes(index)
+                    workDays.includes(day.value)
                       ? 'bg-ofa-red text-white'
                       : 'bg-neutral-800 text-gray-400 hover:bg-neutral-700'
                   }`}
                 >
-                  {day}
+                  {day.label}
                 </button>
               ))}
             </div>

@@ -140,12 +140,12 @@ async def get_today_status(
     clocked_in = []
     on_leave = []
     expected_missing = []
-    
-    today_weekday = today.weekday()
-    
+
+    today_weekday = today.weekday()  # Python: 0=Monday
+
     for employee in employees:
         user_id = employee.id
-        
+
         # Check if on leave
         if user_id in absence_map:
             on_leave.append({
@@ -158,7 +158,7 @@ async def get_today_status(
                 'reason': absence_map[user_id]['reason']
             })
             continue
-        
+
         # Check if clocked in
         if user_id in clock_events:
             ce = clock_events[user_id]
@@ -171,10 +171,17 @@ async def get_today_status(
                 'came_by_car': ce.came_by_car
             })
             continue
-        
+
         # Check if expected today
-        scheduled_days = work_schedules.get(user_id, [])
-        if today_weekday in scheduled_days:
+        # Get JavaScript day numbers (0=Sunday, 1=Monday, etc.)
+        js_scheduled_days = work_schedules.get(user_id, [])
+
+        # Convert to Python day numbers (0=Monday, 1=Tuesday, etc.)
+        py_scheduled_days = [(js_day - 1) % 7 for js_day in js_scheduled_days]
+
+        print(f"[CONVERSION] User {employee.username}: JS days: {js_scheduled_days} → Python days: {py_scheduled_days}, Today Python weekday: {today_weekday}")
+
+        if today_weekday in py_scheduled_days:
             expected_missing.append({
                 'user_id': user_id,
                 'username': employee.username,

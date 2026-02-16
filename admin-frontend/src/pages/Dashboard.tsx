@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { Users, CheckCircle, Activity, AlertTriangle, CircleDot, Circle, Car, ChevronDown, ChevronRight } from 'lucide-react';
 import { api } from '../utils/api';
 import type { TodayStatus, Absence } from '../types/api';
 
@@ -32,11 +33,31 @@ export default function Dashboard() {
     refetchInterval: 60000, // Refresh every minute
   });
 
-  // Fetch pending approvals count
+  // Fetch pending absences
   const { data: pendingAbsences = [] } = useQuery({
     queryKey: ['absences', 'pending'],
     queryFn: async () => {
       const response = await api.get<Absence[]>('/api/absences/pending');
+      return response.data;
+    },
+    refetchInterval: 60000, // Refresh every minute
+  });
+
+  // Fetch pending clock events
+  const { data: pendingClockEvents = [] } = useQuery({
+    queryKey: ['clock', 'pending'],
+    queryFn: async () => {
+      const response = await api.get('/api/clock/pending');
+      return response.data;
+    },
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
+  // Fetch pending calendar events
+  const { data: pendingEvents = [] } = useQuery({
+    queryKey: ['events', 'pending'],
+    queryFn: async () => {
+      const response = await api.get('/api/calendar/events/pending');
       return response.data;
     },
     refetchInterval: 60000, // Refresh every minute
@@ -58,7 +79,10 @@ export default function Dashboard() {
     );
   }
 
-  const pendingCount = pendingAbsences.length;
+  const pendingAbsencesCount = pendingAbsences.length;
+  const pendingClockEventsCount = pendingClockEvents.length;
+  const pendingEventsCount = pendingEvents.length;
+  const totalPendingCount = pendingAbsencesCount + pendingClockEventsCount + pendingEventsCount;
 
   return (
     <div className="space-y-6">
@@ -69,26 +93,35 @@ export default function Dashboard() {
       </div>
 
       {/* Pending Approvals Alert */}
-      {pendingCount > 0 && (
+      {totalPendingCount > 0 && (
         <button
           onClick={() => navigate('/approvals')}
           className="w-full bg-red-900/30 border-2 border-red-500 rounded-lg p-4 hover:bg-red-900/50 transition"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-2xl">
-                ⚠️
+              <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-7 h-7 text-white" />
               </div>
               <div className="text-left">
                 <p className="text-white font-bold text-lg">Wachtende Goedkeuringen</p>
                 <p className="text-red-300 text-sm">
-                  {pendingCount} {pendingCount === 1 ? 'aanvraag' : 'aanvragen'} wacht op jouw goedkeuring
+                  {totalPendingCount} {totalPendingCount === 1 ? 'aanvraag wacht' : 'aanvragen wachten'} op jouw goedkeuring
                 </p>
+                {(pendingAbsencesCount > 0 || pendingClockEventsCount > 0 || pendingEventsCount > 0) && (
+                  <p className="text-red-200 text-xs mt-1">
+                    {pendingAbsencesCount > 0 && `${pendingAbsencesCount} verlof`}
+                    {pendingAbsencesCount > 0 && (pendingClockEventsCount > 0 || pendingEventsCount > 0) && ' • '}
+                    {pendingClockEventsCount > 0 && `${pendingClockEventsCount} uren`}
+                    {pendingClockEventsCount > 0 && pendingEventsCount > 0 && ' • '}
+                    {pendingEventsCount > 0 && `${pendingEventsCount} evenementen`}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-3">
               <span className="px-4 py-2 bg-red-600 text-white rounded-full text-xl font-bold">
-                {pendingCount}
+                {totalPendingCount}
               </span>
               <span className="text-red-300 text-2xl">→</span>
             </div>
@@ -101,25 +134,25 @@ export default function Dashboard() {
         <StatCard
           title="Totaal Medewerkers"
           value={data.stats.total_employees}
-          icon="👥"
+          icon={<Users className="w-6 h-6" />}
           color="bg-neutral-800"
         />
         <StatCard
           title="Ingeklokt"
           value={data.stats.clocked_in}
-          icon="✅"
+          icon={<CheckCircle className="w-6 h-6 text-green-400" />}
           color="bg-green-900/30 border-green-500/30"
         />
         <StatCard
           title="Met Verlof"
           value={data.stats.on_leave}
-          icon="🏥"
+          icon={<Activity className="w-6 h-6 text-blue-400" />}
           color="bg-blue-900/30 border-blue-500/30"
         />
         <StatCard
           title="Verwacht maar Afwezig"
           value={data.stats.expected_missing}
-          icon="⚠️"
+          icon={<AlertTriangle className="w-6 h-6 text-yellow-400" />}
           color="bg-yellow-900/30 border-yellow-500/30"
         />
       </div>
@@ -127,7 +160,7 @@ export default function Dashboard() {
       {/* Clocked In Section */}
       {data.clocked_in.length > 0 && (
         <Section
-          title="🟢 Ingeklokt Vandaag"
+          title={<span className="flex items-center gap-2"><CircleDot className="w-5 h-5 text-green-400" /> Ingeklokt Vandaag</span>}
           count={data.clocked_in.length}
           isOpen={showClockedIn}
           onToggle={() => setShowClockedIn(!showClockedIn)}
@@ -149,13 +182,15 @@ export default function Dashboard() {
                 </div>
                 <div className="text-right">
                   <p className="text-white text-sm">
-                    In: <span className="font-mono">{employee.clock_in}</span>
+                    In: <span className="font-mono">{employee.clock_in ? employee.clock_in.substring(0, 5) : '-'}</span>
                   </p>
                   <p className="text-white text-sm">
-                    Uit: <span className="font-mono">{employee.clock_out}</span>
+                    Uit: <span className="font-mono">{employee.clock_out ? employee.clock_out.substring(0, 5) : '-'}</span>
                   </p>
                   {employee.came_by_car && (
-                    <p className="text-gray-400 text-xs mt-1">🚗 Met auto</p>
+                    <p className="text-gray-400 text-xs mt-1 flex items-center gap-1">
+                      <Car className="w-3 h-3" /> Met auto
+                    </p>
                   )}
                 </div>
               </div>
@@ -167,7 +202,7 @@ export default function Dashboard() {
       {/* On Leave Section */}
       {data.on_leave.length > 0 && (
         <Section
-          title="🔴 Met Verlof"
+          title={<span className="flex items-center gap-2"><Circle className="w-5 h-5 text-red-400 fill-red-400" /> Met Verlof</span>}
           count={data.on_leave.length}
           isOpen={showOnLeave}
           onToggle={() => setShowOnLeave(!showOnLeave)}
@@ -212,7 +247,7 @@ export default function Dashboard() {
       {/* Missing Section */}
       {data.expected_missing.length > 0 && (
         <Section
-          title="⚠️ Verwacht maar Afwezig"
+          title={<span className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-yellow-400" /> Verwacht maar Afwezig</span>}
           count={data.expected_missing.length}
           isOpen={showMissing}
           onToggle={() => setShowMissing(!showMissing)}
@@ -247,7 +282,7 @@ export default function Dashboard() {
 }
 
 // Helper Components
-function StatCard({ title, value, icon, color }: { title: string; value: number; icon: string; color: string }) {
+function StatCard({ title, value, icon, color }: { title: string; value: number; icon: React.ReactNode; color: string }) {
   return (
     <div className={`${color} border border-neutral-700 rounded-lg p-6`}>
       <div className="flex items-center justify-between">
@@ -255,7 +290,7 @@ function StatCard({ title, value, icon, color }: { title: string; value: number;
           <p className="text-gray-400 text-sm">{title}</p>
           <p className="text-white text-3xl font-bold mt-2">{value}</p>
         </div>
-        <div className="text-4xl">{icon}</div>
+        <div>{icon}</div>
       </div>
     </div>
   );
@@ -268,7 +303,7 @@ function Section({
   onToggle,
   children,
 }: {
-  title: string;
+  title: React.ReactNode;
   count: number;
   isOpen: boolean;
   onToggle: () => void;
@@ -281,7 +316,7 @@ function Section({
         className="w-full px-6 py-4 flex items-center justify-between hover:bg-neutral-800/50 transition"
       >
         <div className="flex items-center gap-3">
-          <span className="text-xl">{isOpen ? '▼' : '▶'}</span>
+          {isOpen ? <ChevronDown className="w-5 h-5 text-gray-400" /> : <ChevronRight className="w-5 h-5 text-gray-400" />}
           <h2 className="text-lg font-bold text-white">{title}</h2>
           <span className="px-3 py-1 bg-ofa-red rounded-full text-white text-sm font-medium">
             {count}

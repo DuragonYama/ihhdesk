@@ -40,9 +40,25 @@ async def get_users(
     return result
 
 @router.get("/me", response_model=UserResponse)
-async def get_me(current_user: User = Depends(get_current_user)):
+async def get_me(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Get current logged-in user info"""
-    return current_user
+    # Get work schedule
+    work_schedules = db.query(WorkSchedule).filter(WorkSchedule.user_id == current_user.id).all()
+    work_days = [ws.day_of_week for ws in work_schedules]
+
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "role": current_user.role,
+        "is_active": current_user.is_active,
+        "expected_weekly_hours": current_user.expected_weekly_hours,
+        "has_km_compensation": current_user.has_km_compensation,
+        "work_days": work_days
+    }
 
 @router.post("/", response_model=UserResponse)
 async def create_user(

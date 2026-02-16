@@ -7,7 +7,6 @@ from app.models import User, Absence, ClockEvent
 from app.schemas import (
     AbsenceRequest,
     AbsenceResponse,
-    ApproveAbsenceRequest,
     RejectAbsenceRequest,
     UpdateAbsenceRequest,
     AdminCreateAbsenceRequest
@@ -60,6 +59,29 @@ async def request_absence(
             status_code=400,
             detail=f"You already have an open absence starting {open_absence.start_date}"
         )
+
+    # Check if user already has an absence starting on this date
+    existing = db.query(Absence).filter(
+        Absence.user_id == current_user.id,
+        Absence.start_date == absence_data.start_date
+    ).first()
+
+    if existing:
+        # If it's rejected, allow user to request again by deleting the old one
+        if existing.status == 'rejected':
+            db.delete(existing)
+            db.commit()
+        # If it's pending or approved, don't allow duplicate
+        elif existing.status == 'pending':
+            raise HTTPException(
+                status_code=400,
+                detail="Je hebt al een aanvraag voor deze datum in behandeling"
+            )
+        elif existing.status == 'approved':
+            raise HTTPException(
+                status_code=400,
+                detail="Je hebt al goedgekeurd verlof voor deze datum"
+            )
 
     absence = Absence(
         user_id=current_user.id,
@@ -282,7 +304,6 @@ async def get_user_absences(
 @router.patch("/{absence_id}/approve", response_model=AbsenceResponse)
 async def approve_absence(
     absence_id: int,
-    request: ApproveAbsenceRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin)
 ):
@@ -320,29 +341,15 @@ async def approve_absence(
     user = db.query(User).filter(User.id == absence.user_id).first()
     type_nl = ABSENCE_TYPES_NL.get(absence.type, absence.type)
     start_date_nl = format_date_nl(absence.start_date)
-    
-    if request.message:
-        # Custom message
-        email_body = f"""
-Hoi {user.username},
 
-Je {type_nl} aanvraag voor {start_date_nl} is GOEDGEKEURD.
-
-Bericht van HR:
-{request.message}
-
-Met vriendelijke groet,
-HR Team
-"""
+    # Default message
+    if absence.end_date and absence.end_date != absence.start_date:
+        end_date_nl = format_date_nl(absence.end_date)
+        date_range = f"{start_date_nl} t/m {end_date_nl}"
     else:
-        # Default message
-        if absence.end_date and absence.end_date != absence.start_date:
-            end_date_nl = format_date_nl(absence.end_date)
-            date_range = f"{start_date_nl} t/m {end_date_nl}"
-        else:
-            date_range = start_date_nl
-            
-        email_body = f"""
+        date_range = start_date_nl
+
+    email_body = f"""
 Hoi {user.username},
 
 Je {type_nl} aanvraag voor {date_range} is GOEDGEKEURD.
@@ -390,8 +397,8 @@ async def reject_absence(
     user = db.query(User).filter(User.id == absence.user_id).first()
     type_nl = ABSENCE_TYPES_NL.get(absence.type, absence.type)
     start_date_nl = format_date_nl(absence.start_date)
-    
-    if request.message:
+
+    if request.admin_notes:
         # Custom message
         email_body = f"""
 Hoi {user.username},
@@ -399,7 +406,7 @@ Hoi {user.username},
 Je {type_nl} aanvraag voor {start_date_nl} is AFGEWEZEN.
 
 Reden:
-{request.message}
+{request.admin_notes}
 
 Neem contact op met HR als je vragen hebt.
 
@@ -413,7 +420,7 @@ HR Team
             date_range = f"{start_date_nl} t/m {end_date_nl}"
         else:
             date_range = start_date_nl
-            
+
         email_body = f"""
 Hoi {user.username},
 
@@ -473,21 +480,60 @@ async def delete_absence(
     if current_user.role == 'admin':
         can_delete = True
     elif absence.user_id == current_user.id:
-        # Check if within current week
-        today = datetime.now().date()
-        week_start = today - timedelta(days=today.weekday())
-        week_end = week_start + timedelta(days=6)
-        can_delete = week_start <= absence.start_date <= week_end
+        # Employees can only delete their own pending absences
+        can_delete = absence.status == 'pending'
     else:
         can_delete = False
-    
+
     if not can_delete:
         raise HTTPException(
             status_code=403,
-            detail="Cannot delete this absence"
+            detail="Can only delete pending absences" if current_user.role == 'employee' else "Cannot delete this absence"
         )
     
     db.delete(absence)
     db.commit()
     
     return {"message": "Absence deleted successfully"}
+@router.patch("/{absence_id}/edit")
+async def edit_absence(
+    absence_id: int,
+    updates: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin)
+):
+    """Edit and approve absence (admin only)"""
+    
+    from datetime import datetime as dt
+    
+    absence = db.query(Absence).filter(Absence.id == absence_id).first()
+    if not absence:
+        raise HTTPException(status_code=404, detail="Absence not found")
+    
+    # Update fields - PARSE DATES PROPERLY
+    if 'type' in updates:
+        absence.type = updates['type']
+
+    if 'start_date' in updates:
+        # Parse string to date object
+        absence.start_date = dt.strptime(updates['start_date'], '%Y-%m-%d').date()
+
+    if 'end_date' in updates:
+        if updates['end_date']:
+            # Parse string to date object
+            absence.end_date = dt.strptime(updates['end_date'], '%Y-%m-%d').date()
+        else:
+            absence.end_date = None
+
+    if 'reason' in updates:
+        absence.reason = updates['reason']
+    
+    # Auto-approve after edit
+    absence.status = 'approved'
+    absence.reviewed_at = dt.now()
+    absence.reviewed_by = current_user.id
+    
+    db.commit()
+    db.refresh(absence)
+    
+    return absence

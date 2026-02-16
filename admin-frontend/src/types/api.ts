@@ -93,6 +93,7 @@ export interface EmployeeBalance {
   expected_weekly_hours: number;
   hours_per_scheduled_day: number;
   scheduled_days: number[];
+  total_hours_worked: number;  // Actual hours from clock events
   extra_hours: number;
   missing_hours: number;
   balance: number;
@@ -150,6 +151,7 @@ export interface CalendarEvent {
   visibility: string;
   status: string;
   created_by: number;
+  username?: string; // For pending events
   created_at: string;
   reviewed_at: string | null;
   reviewed_by: number | null;
@@ -193,6 +195,21 @@ export interface ClockEvent {
   came_by_car: boolean;
   parking_cost: number | null;
   km_driven: number | null;
+}
+
+export interface PendingClockEvent {
+  id: number;
+  user_id: number;
+  username: string;
+  date: string;
+  clock_in: string;
+  clock_out: string;
+  came_by_car: boolean;
+  parking_cost: number | null;
+  km_driven: number | null;
+  requested_reason: string | null;
+  created_at: string | null;
+  status: string;
 }
 
 export interface CreateClockEventRequest {
