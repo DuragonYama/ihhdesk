@@ -8,7 +8,6 @@ import { EditAbsenceModal } from '../components/EditAbsenceModal';
 import { EditCalendarEventModal } from '../components/EditCalendarEventModal';
 
 export default function Approvals() {
-  const queryClient = useQueryClient();
 
   // Fetch pending absences
   const { data: pendingAbsences = [] } = useQuery({
@@ -141,7 +140,7 @@ function ClockEventCard({ event }: { event: any }) {
   
   // Reject mutation
   const rejectMutation = useMutation({
-    mutationFn: async (notes?: string) => {
+    mutationFn: async (_notes?: string) => {
       await api.delete(`/api/clock/${event.id}`);
       // TODO: Could send notes in rejection email
     },
@@ -311,7 +310,7 @@ function AbsenceCard({ absence }: { absence: any }) {
   
   // Approve mutation
   const approveMutation = useMutation({
-    mutationFn: async (notes?: string) => {
+    mutationFn: async (_notes?: string) => {
       await api.patch(`/api/absences/${absence.id}/approve`);
       // Notes not used in approve for now
     },
@@ -485,7 +484,7 @@ function EventCard({ event }: { event: any }) {
 
   // Approve mutation
   const approveMutation = useMutation({
-    mutationFn: async (notes?: string) => {
+    mutationFn: async (_notes?: string) => {
       await api.patch(`/api/calendar/events/${event.id}/approve`);
       // Notes not used in approve for now
     },

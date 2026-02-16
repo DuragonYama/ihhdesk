@@ -4,25 +4,25 @@ import { api } from '../utils/api';
 import type { User, Absence, ApproveRejectRequest, AdminCreateAbsenceRequest, UpdateAbsenceRequest } from '../types/api';
 import BulkAbsenceModal from '../components/BulkAbsenceModal';
 
-const TYPE_COLORS = {
+const TYPE_COLORS: Record<string, string> = {
   sick: 'bg-blue-500/20 text-blue-400',
   personal: 'bg-green-500/20 text-green-400',
   vacation: 'bg-cyan-500/20 text-cyan-400',
 };
 
-const TYPE_NAMES_NL = {
+const TYPE_NAMES_NL: Record<string, string> = {
   sick: 'Ziek',
   personal: 'Persoonlijk',
   vacation: 'Vakantie',
 };
 
-const STATUS_BADGES = {
+const STATUS_BADGES: Record<string, string> = {
   pending: 'bg-yellow-900/30 text-yellow-400',
   approved: 'bg-green-900/30 text-green-400',
   rejected: 'bg-red-900/30 text-red-400',
 };
 
-const STATUS_NAMES_NL = {
+const STATUS_NAMES_NL: Record<string, string> = {
   pending: 'Wachtend',
   approved: 'Goedgekeurd',
   rejected: 'Afgewezen',
