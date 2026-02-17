@@ -119,8 +119,8 @@ def init_production_db():
                 password_hash=get_password_hash(password),
                 role='admin',
                 is_active=True,
-                expected_weekly_hours=40,
-                work_days=[1, 2, 3, 4, 5]  # Monday to Friday
+                expected_weekly_hours=0,
+                work_days=[]
             )
             db.add(admin)
             db.commit()
