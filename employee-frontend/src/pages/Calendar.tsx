@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Palmtree, FileText, Calendar as CalendarIcon, Clock, Sparkles } from 'lucide-react';
+import { Palmtree, FileText, Calendar as CalendarIcon, Clock, Sparkles, Activity } from 'lucide-react';
 import { api } from '../utils/api';
 import type { Absence } from '../types/api';
 
 // Helper function to get icon for events
 const getEventIcon = (event: any, size: string = 'w-5 h-5') => {
   if (event.type === 'absence') {
+    if (event.subtype === 'sick') return <Activity className={`${size} text-red-400`} />;
     if (event.subtype === 'vacation') return <Palmtree className={`${size} text-green-400`} />;
     return <FileText className={`${size} text-purple-400`} />;
   }
@@ -49,7 +50,7 @@ export default function Calendar() {
 
   const monthRange = getMonthRange(currentDate);
 
-  // Fetch personal absences (vacation/personal leave - exclude sick days)
+  // Fetch personal absences (all types including sick days)
   const { data: myAbsences = [] } = useQuery({
     queryKey: ['absences', 'mine', monthRange.start, monthRange.end],
     queryFn: async () => {
@@ -58,7 +59,6 @@ export default function Calendar() {
 
       return allAbsences.filter((absence: Absence) => {
         if (absence.status !== 'approved') return false;
-        if (absence.type === 'sick') return false; // Exclude sick days
 
         const absenceStart = new Date(absence.start_date);
         const absenceEnd = absence.end_date ? new Date(absence.end_date) : absenceStart;
@@ -100,18 +100,17 @@ export default function Calendar() {
 
   // Combine all events into one array
   const allEvents = [
-    // Personal absences
+    // Personal absences (including sick days)
     ...myAbsences.map((absence: Absence) => ({
       id: `absence-${absence.id}`,
       type: 'absence',
       subtype: absence.type,
-      title: absence.type === 'vacation' ? 'Vakantie' : 'Persoonlijk Verlof',
+      title: absence.type === 'vacation' ? 'Vakantie' : absence.type === 'sick' ? 'Ziek' : 'Persoonlijk Verlof',
       start_date: absence.start_date,
       end_date: absence.end_date,
       description: absence.reason,
-      emoji: absence.type === 'vacation' ? '🏖️' : '📋',
-      category_color: '#3b82f6', // Blue for absences
-      category_name: absence.type === 'vacation' ? 'Vakantie' : 'Persoonlijk'
+      category_color: absence.type === 'sick' ? '#ef4444' : absence.type === 'vacation' ? '#3b82f6' : '#a855f7',
+      category_name: absence.type === 'vacation' ? 'Vakantie' : absence.type === 'sick' ? 'Ziek' : 'Persoonlijk'
     })),
     // Company events (now with category info from backend)
     ...companyEvents.map((event: any) => ({

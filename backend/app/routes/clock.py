@@ -445,6 +445,7 @@ async def update_clock_event(
 @router.patch("/{event_id}/approve")
 async def approve_clock_event(
     event_id: int,
+    request_data: dict = {},
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin)
 ):
@@ -466,22 +467,33 @@ async def approve_clock_event(
     db.refresh(event)
 
     # Send approval email
+    admin_notes = request_data.get('admin_notes') if request_data else None
     user = db.query(User).filter(User.id == event.user_id).first()
     if user and user.email:
         try:
-            await send_email(
-                to_email=user.email,
-                subject="Uurregistratie Goedgekeurd",
-                body=f"""Hallo {user.username},
+            body = f"""Hallo {user.username},
 
 Je uurregistratie is goedgekeurd:
 
 Datum: {event.date.strftime('%d-%m-%Y')}
 Tijd: {event.clock_in.strftime('%H:%M')} - {event.clock_out.strftime('%H:%M')}
-{f'Reden: {event.requested_reason}' if event.requested_reason else ''}
+{f'Reden: {event.requested_reason}' if event.requested_reason else ''}"""
+
+            if admin_notes:
+                body += f"""
+
+Bericht van admin:
+{admin_notes}"""
+
+            body += """
 
 Groeten,
 HR Team"""
+
+            await send_email(
+                to_email=user.email,
+                subject="Uurregistratie Goedgekeurd",
+                body=body
             )
         except Exception as e:
             print(f"Failed to send approval email: {e}")
@@ -491,6 +503,7 @@ HR Team"""
 @router.delete("/{event_id}")
 async def delete_clock_event(
     event_id: int,
+    request_data: dict = {},
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -513,8 +526,11 @@ async def delete_clock_event(
             raise HTTPException(status_code=403, detail="Cannot delete past week events")
 
     # Get user for email
+    admin_notes = request_data.get('admin_notes') if request_data else None
     user = db.query(User).filter(User.id == event.user_id).first()
     was_pending = event.status == 'pending'
+    event_date = event.date.strftime('%d-%m-%Y')
+    requested_reason = event.requested_reason
 
     db.delete(event)
     db.commit()
@@ -522,20 +538,30 @@ async def delete_clock_event(
     # Send rejection email if it was pending (admin rejected it)
     if was_pending and current_user.role == 'admin' and user and user.email:
         try:
-            await send_email(
-                to_email=user.email,
-                subject="Uurregistratie Afgewezen",
-                body=f"""Hallo {user.username},
+            body = f"""Hallo {user.username},
 
 Je uurregistratie is afgewezen:
 
-Datum: {event.date.strftime('%d-%m-%Y')}
-{f'Reden: {event.requested_reason}' if event.requested_reason else ''}
+Datum: {event_date}
+{f'Reden: {requested_reason}' if requested_reason else ''}"""
+
+            if admin_notes:
+                body += f"""
+
+Bericht van admin:
+{admin_notes}"""
+
+            body += """
 
 Neem contact op met HR voor meer informatie.
 
 Groeten,
 HR Team"""
+
+            await send_email(
+                to_email=user.email,
+                subject="Uurregistratie Afgewezen",
+                body=body
             )
         except Exception as e:
             print(f"Failed to send rejection email: {e}")

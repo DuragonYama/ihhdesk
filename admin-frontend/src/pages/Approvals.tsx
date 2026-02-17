@@ -140,9 +140,8 @@ function ClockEventCard({ event }: { event: any }) {
   
   // Reject mutation
   const rejectMutation = useMutation({
-    mutationFn: async (_notes?: string) => {
-      await api.delete(`/api/clock/${event.id}`);
-      // TODO: Could send notes in rejection email
+    mutationFn: async (notes?: string) => {
+      await api.delete(`/api/clock/${event.id}`, { data: notes ? { admin_notes: notes } : {} });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clock'] });
@@ -310,9 +309,9 @@ function AbsenceCard({ absence }: { absence: any }) {
   
   // Approve mutation
   const approveMutation = useMutation({
-    mutationFn: async (_notes?: string) => {
-      await api.patch(`/api/absences/${absence.id}/approve`);
-      // Notes not used in approve for now
+    mutationFn: async (notes?: string) => {
+      const payload = notes ? { admin_notes: notes } : {};
+      await api.patch(`/api/absences/${absence.id}/approve`, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['absences'] });
@@ -484,9 +483,9 @@ function EventCard({ event }: { event: any }) {
 
   // Approve mutation
   const approveMutation = useMutation({
-    mutationFn: async (_notes?: string) => {
-      await api.patch(`/api/calendar/events/${event.id}/approve`);
-      // Notes not used in approve for now
+    mutationFn: async (notes?: string) => {
+      const payload = notes ? { admin_notes: notes } : {};
+      await api.patch(`/api/calendar/events/${event.id}/approve`, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });

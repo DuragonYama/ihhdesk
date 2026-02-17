@@ -286,6 +286,7 @@ async def get_event_detail(
 @router.patch("/events/{event_id}/approve", response_model=CalendarEventResponse)
 async def approve_event(
     event_id: int,
+    request_data: dict = {},
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin)
 ):
@@ -311,13 +312,12 @@ async def approve_event(
     db.refresh(event)
 
     # Send approval email
+    admin_notes = request_data.get('admin_notes') if request_data else None
     creator = db.query(User).filter(User.id == event.created_by).first()
     if creator and creator.email:
         try:
-            # Format date in Dutch style
             event_date = event.date.strftime('%d-%m-%Y')
 
-            # Get category name if exists
             category_name = ''
             if event.category_id:
                 category = db.query(EventCategory).filter(EventCategory.id == event.category_id).first()
@@ -343,10 +343,12 @@ Datum: {event_date}
             if event.description:
                 body += f"\nBeschrijving: {event.description}\n"
 
+            if admin_notes:
+                body += f"\nBericht van admin:\n{admin_notes}\n"
+
             body += """
 Groeten,
-HR Team
-"""
+HR Team"""
 
             await send_email(
                 to_email=creator.email,

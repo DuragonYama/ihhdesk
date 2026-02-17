@@ -159,13 +159,6 @@ export default function Balance() {
 
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-gray-400">🚗 Auto dagen</span>
-            <span className="text-white font-medium">
-              {balance?.details?.filter((d: any) => d.came_by_car).length || 0} dagen
-            </span>
-          </div>
-
-          <div className="flex justify-between items-center">
             <span className="text-gray-400">💶 Parkeerkosten</span>
             <span className="text-white font-medium">
               €{(balance?.total_parking || 0).toFixed(2)}

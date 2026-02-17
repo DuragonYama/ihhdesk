@@ -304,66 +304,73 @@ async def get_user_absences(
 @router.patch("/{absence_id}/approve", response_model=AbsenceResponse)
 async def approve_absence(
     absence_id: int,
+    request_data: dict = {},
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin)
 ):
     """Approve absence request (admin only)"""
-    
+
     absence = db.query(Absence).filter(Absence.id == absence_id).first()
     if not absence:
         raise HTTPException(status_code=404, detail="Absence not found")
-    
+
     if absence.status != 'pending':
         raise HTTPException(
             status_code=400,
             detail=f"Cannot approve absence with status '{absence.status}'"
         )
-    
+
     # Approve absence
     absence.status = 'approved'
     absence.reviewed_at = datetime.now()
     absence.reviewed_by = current_user.id
-    
+
     # Close open-ended absence if needed
-    if absence.end_date is None:  
+    if absence.end_date is None:
         first_clock_in = db.query(ClockEvent).filter(
             ClockEvent.user_id == absence.user_id,
             ClockEvent.date > absence.start_date
         ).order_by(ClockEvent.date.asc()).first()
-        
+
         if first_clock_in:
             absence.end_date = first_clock_in.date - timedelta(days=1)
-    
+
     db.commit()
     db.refresh(absence)
-    
+
     # Send email notification
     user = db.query(User).filter(User.id == absence.user_id).first()
     type_nl = ABSENCE_TYPES_NL.get(absence.type, absence.type)
     start_date_nl = format_date_nl(absence.start_date)
+    admin_notes = request_data.get('admin_notes') if request_data else None
 
-    # Default message
     if absence.end_date and absence.end_date != absence.start_date:
         end_date_nl = format_date_nl(absence.end_date)
         date_range = f"{start_date_nl} t/m {end_date_nl}"
     else:
         date_range = start_date_nl
 
-    email_body = f"""
-Hoi {user.username},
+    email_body = f"""Hoi {user.username},
 
-Je {type_nl} aanvraag voor {date_range} is GOEDGEKEURD.
+Je {type_nl} aanvraag voor {date_range} is GOEDGEKEURD."""
+
+    if admin_notes:
+        email_body += f"""
+
+Bericht van admin:
+{admin_notes}"""
+
+    email_body += """
 
 Met vriendelijke groet,
-HR Team
-"""
-    
+HR Team"""
+
     await send_email(
         to_email=user.email,
         subject=f"Verlofaanvraag Goedgekeurd - {type_nl.title()}",
         body=email_body
     )
-    
+
     return absence
 
 @router.patch("/{absence_id}/reject", response_model=AbsenceResponse)
