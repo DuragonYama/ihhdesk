@@ -120,7 +120,6 @@ def init_production_db():
                 role='admin',
                 is_active=True,
                 expected_weekly_hours=0,
-                work_days=[]
             )
             db.add(admin)
             db.commit()
