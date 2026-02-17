@@ -212,12 +212,20 @@ VITE_API_URL=https://your-backend-api.com
 EMPLOYEE_FRONTEND_URL=http://localhost:5173
 ADMIN_FRONTEND_URL=http://localhost:5174
 
-# Production (update with your actual URLs)
-# EMPLOYEE_FRONTEND_URL=https://your-employee-app.vercel.app
-# ADMIN_FRONTEND_URL=https://your-admin-app.vercel.app
+# Production
+# EMPLOYEE_FRONTEND_URL=https://ihh-hr.codeofa.com
+# ADMIN_FRONTEND_URL=https://ihh-desk.codeofa.com
 ```
 
 **To switch to production:** Simply update the URLs in `backend/.env` and restart the server. No code changes needed!
+
+### Production Domains
+
+- **Employee Frontend:** `https://ihh-hr.codeofa.com`
+- **Admin Frontend:** `https://ihh-desk.codeofa.com`
+- **Backend API:** `https://ihh-api.codeofa.com`
+
+See `backend/DEPLOYMENT.md` for complete production deployment guide.
 
 ---
 

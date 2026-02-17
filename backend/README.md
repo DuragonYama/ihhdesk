@@ -24,18 +24,107 @@ cp .env.example .env
 ```
 
 4. Initialize database:
-```bash
-# Apply all migrations
-alembic upgrade head
 
-# Create admin user
-python init_db.py
+**For Development (with test users):**
+```bash
+python init_db_dev.py
 ```
+
+**For Production (secure admin account):**
+```bash
+python init_db_prod.py
+```
+
+See [Database Initialization](#database-initialization) below for details.
 
 5. Run the server:
 ```bash
 uvicorn app.main:app --reload --port 8000
 ```
+
+## Database Initialization
+
+The backend provides two initialization scripts for different environments:
+
+### Development: `init_db_dev.py`
+
+**Use for:** Local development and testing
+
+**What it does:**
+- Creates database tables
+- Creates test users with default passwords
+- Provides immediate access for development
+
+**Test accounts created:**
+- **Admin:** username: `admin` | password: `admin123`
+- **Developer:** username: `developer` | password: `dev123`
+- **Employee:** username: `employee` | password: `emp123`
+
+**Usage:**
+```bash
+python init_db_dev.py
+```
+
+⚠️ **WARNING:** Never use in production! Test credentials are insecure.
+
+---
+
+### Production: `init_db_prod.py`
+
+**Use for:** Production deployment on servers
+
+**What it does:**
+- Creates database tables
+- Prompts for secure admin credentials
+- Validates password strength (min 8 chars, uppercase, lowercase, number)
+- Creates single admin account
+- No test users created
+
+**Usage:**
+```bash
+python init_db_prod.py
+```
+
+**Password requirements:**
+- Minimum 8 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one number
+- Confirmation required
+
+**Example session:**
+```
+🔐 PRODUCTION DATABASE INITIALIZATION
+=====================================
+
+👤 Admin Account Setup
+Admin username: john.doe
+Admin email: john@codeofa.com
+Admin password: ********
+Confirm password: ********
+
+✅ PRODUCTION DATABASE INITIALIZED SUCCESSFULLY!
+```
+
+---
+
+### Production Domains
+
+When deploying to production, use these domains:
+
+- **Employee Frontend:** `https://ihh-hr.codeofa.com`
+- **Admin Frontend:** `https://ihh-desk.codeofa.com`
+- **Backend API:** `https://ihh-api.codeofa.com`
+
+Update `.env` file:
+```env
+EMPLOYEE_FRONTEND_URL=https://ihh-hr.codeofa.com
+ADMIN_FRONTEND_URL=https://ihh-desk.codeofa.com
+```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete production setup guide.
+
+---
 
 ## Database Migrations
 
@@ -99,7 +188,9 @@ backend/
 │   └── utils/            # Utility functions
 ├── alembic.ini           # Alembic configuration
 ├── requirements.txt      # Python dependencies
-└── init_db.py           # Database initialization script
+├── init_db_dev.py        # Development database init (test users)
+├── init_db_prod.py       # Production database init (secure)
+└── DEPLOYMENT.md         # Production deployment guide
 ```
 
 ## Development Workflow
