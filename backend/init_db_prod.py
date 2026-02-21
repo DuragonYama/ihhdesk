@@ -11,6 +11,7 @@ Usage:
 
 import sys
 import os
+import subprocess
 from getpass import getpass
 
 # Add the app directory to the Python path
@@ -54,6 +55,25 @@ def init_production_db():
     print("📦 Creating database tables...")
     Base.metadata.create_all(bind=engine)
     print("✅ Database tables created successfully")
+    print()
+
+    # Stamp Alembic so future `alembic upgrade head` runs don't try to recreate tables
+    print("📝 Syncing Alembic migration history...")
+    try:
+        result = subprocess.run(
+            [sys.executable, '-m', 'alembic', 'stamp', 'head'],
+            capture_output=True,
+            text=True,
+            cwd=os.path.dirname(os.path.abspath(__file__))
+        )
+        if result.returncode == 0:
+            print("✅ Alembic migration history synced")
+        else:
+            print("⚠️  Warning: Could not sync Alembic automatically")
+            print(f"   Run manually: alembic stamp head")
+    except Exception:
+        print("⚠️  Warning: Could not run alembic stamp")
+        print(f"   Run manually: alembic stamp head")
     print()
 
     # Get admin credentials
@@ -153,6 +173,9 @@ def init_production_db():
             print("  3. Set ADMIN_FRONTEND_URL=https://ihh-desk.codeofa.com")
             print("  4. Configure Cloudflare tunnel for API")
             print("  5. Set up systemd service")
+            print()
+            print("🔄 Future Migrations:")
+            print("  Run: alembic upgrade head")
             print()
             print("See DEPLOYMENT.md for detailed instructions.")
             print()
