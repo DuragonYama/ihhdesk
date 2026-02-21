@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Download } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../utils/api';
 import type { User, Absence, ApproveRejectRequest, AdminCreateAbsenceRequest, UpdateAbsenceRequest } from '../types/api';
@@ -34,6 +34,8 @@ export default function AbsenceManagement() {
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedDateRange, setSelectedDateRange] = useState<string>('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [editingAbsence, setEditingAbsence] = useState<Absence | null>(null);
@@ -88,16 +90,26 @@ export default function AbsenceManagement() {
       const currentMonth = now.getMonth();
 
       filtered = filtered.filter(a => {
-        const absenceDate = new Date(a.start_date);
+        const absenceStart = new Date(a.start_date);
+        const absenceEnd = a.end_date ? new Date(a.end_date) : absenceStart;
 
         switch (selectedDateRange) {
           case 'this-month':
-            return absenceDate.getFullYear() === currentYear && absenceDate.getMonth() === currentMonth;
-          case 'last-month':
+            return absenceStart.getFullYear() === currentYear && absenceStart.getMonth() === currentMonth;
+          case 'last-month': {
             const lastMonth = new Date(currentYear, currentMonth - 1);
-            return absenceDate.getFullYear() === lastMonth.getFullYear() && absenceDate.getMonth() === lastMonth.getMonth();
+            return absenceStart.getFullYear() === lastMonth.getFullYear() && absenceStart.getMonth() === lastMonth.getMonth();
+          }
           case 'this-year':
-            return absenceDate.getFullYear() === currentYear;
+            return absenceStart.getFullYear() === currentYear;
+          case 'custom': {
+            if (!customStartDate && !customEndDate) return true;
+            const filterStart = customStartDate ? new Date(customStartDate) : null;
+            const filterEnd = customEndDate ? new Date(customEndDate) : null;
+            if (filterStart && absenceEnd < filterStart) return false;
+            if (filterEnd && absenceStart > filterEnd) return false;
+            return true;
+          }
           default:
             return true;
         }
@@ -105,19 +117,17 @@ export default function AbsenceManagement() {
     }
 
     return filtered;
-  }, [allAbsences, selectedEmployee, selectedType, selectedStatus, selectedDateRange]);
+  }, [allAbsences, selectedEmployee, selectedType, selectedStatus, selectedDateRange, customStartDate, customEndDate]);
 
-  // Group absences by employee
+  // Group absences by employee — only include employees who have matching absences
   const absencesByEmployee = useMemo(() => {
     const employees = users.filter(u => u.role === 'employee' && u.is_active);
-    const grouped = new Map<number, { user: User; absences: Absence[] }>();
-
-    employees.forEach(user => {
-      const userAbsences = filteredAbsences.filter(a => a.user_id === user.id);
-      grouped.set(user.id, { user, absences: userAbsences });
-    });
-
-    return Array.from(grouped.values());
+    return employees
+      .map(user => ({
+        user,
+        absences: filteredAbsences.filter(a => a.user_id === user.id),
+      }))
+      .filter(({ absences }) => absences.length > 0);
   }, [users, filteredAbsences]);
 
   const resetFilters = () => {
@@ -125,6 +135,8 @@ export default function AbsenceManagement() {
     setSelectedType('all');
     setSelectedStatus('all');
     setSelectedDateRange('all');
+    setCustomStartDate('');
+    setCustomEndDate('');
   };
 
   const toggleEmployee = (userId: number) => {
@@ -135,6 +147,46 @@ export default function AbsenceManagement() {
       newExpanded.add(userId);
     }
     setExpandedEmployees(newExpanded);
+  };
+
+  const downloadCSV = () => {
+    if (filteredAbsences.length === 0) {
+      alert('Geen gegevens om te exporteren');
+      return;
+    }
+
+    const rows = filteredAbsences.map(absence => {
+      const employee = users.find(u => u.id === absence.user_id);
+      return {
+        'Medewerker': employee?.username || absence.username || '',
+        'Type': TYPE_NAMES_NL[absence.type] || absence.type,
+        'Status': STATUS_NAMES_NL[absence.status] || absence.status,
+        'Startdatum': absence.start_date,
+        'Einddatum': absence.end_date || absence.start_date,
+        'Reden': absence.reason || '',
+        'Beoordeeld op': absence.reviewed_at
+          ? new Date(absence.reviewed_at).toLocaleDateString('nl-NL')
+          : '',
+      };
+    });
+
+    const headers = Object.keys(rows[0]);
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row =>
+        headers.map(h => `"${String(row[h as keyof typeof row]).replace(/"/g, '""')}"`).join(',')
+      ),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `verlof-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   if (isLoading) {
@@ -213,9 +265,35 @@ export default function AbsenceManagement() {
               <option value="this-month">Deze maand</option>
               <option value="last-month">Vorige maand</option>
               <option value="this-year">Dit jaar</option>
+              <option value="custom">Aangepaste periode</option>
             </select>
           </div>
         </div>
+
+        {/* Custom date range inputs */}
+        {selectedDateRange === 'custom' && (
+          <div className="flex gap-4 mt-4">
+            <div className="flex-1">
+              <label className="block text-sm text-gray-400 mb-1">Van</label>
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-ofa-red"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm text-gray-400 mb-1">Tot</label>
+              <input
+                type="date"
+                value={customEndDate}
+                min={customStartDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-ofa-red"
+              />
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-between mt-4">
           <button
@@ -225,6 +303,13 @@ export default function AbsenceManagement() {
             Reset Filters
           </button>
           <div className="flex gap-2">
+            <button
+              onClick={downloadCSV}
+              className="flex items-center gap-2 px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg transition"
+            >
+              <Download className="w-4 h-4" />
+              CSV
+            </button>
             <button
               onClick={() => setShowBulkModal(true)}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
