@@ -45,15 +45,22 @@ export default function Users() {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="bg-ofa-red hover:bg-ofa-red-hover text-white px-6 py-3 rounded-lg font-medium transition"
+          className="bg-ofa-red hover:bg-ofa-red-hover text-white px-3 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm font-medium transition whitespace-nowrap"
         >
           + Nieuwe Medewerker
         </button>
       </div>
 
-      {/* Users Table */}
+      {/* Users List */}
       <div className="bg-ofa-bg rounded-lg border border-neutral-800 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile cards */}
+        <div className="md:hidden divide-y divide-neutral-800">
+          {users.map((user) => (
+            <UserCard key={user.id} user={user} onEdit={() => setEditingUser(user)} />
+          ))}
+        </div>
+        {/* Desktop table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-neutral-800">
               <tr>
@@ -157,6 +164,63 @@ function UserRow({ user, onEdit }: { user: User; onEdit: () => void }) {
         </button>
       </td>
     </tr>
+  );
+}
+
+// Mobile User Card Component
+function UserCard({ user, onEdit }: { user: User; onEdit: () => void }) {
+  return (
+    <div className="p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 bg-ofa-red rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+            {user.username.charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <p className="text-white font-medium truncate">{user.username}</p>
+            <p className="text-gray-400 text-sm truncate">{user.email}</p>
+          </div>
+        </div>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-2 ${
+          user.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+        }`}>
+          {user.is_active ? 'Actief' : 'Inactief'}
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between mb-3 text-sm">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+            user.role === 'admin' ? 'bg-ofa-red/20 text-ofa-red' :
+            user.role === 'developer' ? 'bg-blue-500/20 text-blue-400' :
+            'bg-gray-500/20 text-gray-400'
+          }`}>
+            {user.role}
+          </span>
+          {user.expected_weekly_hours && (
+            <span className="text-gray-500">{user.expected_weekly_hours}u/week</span>
+          )}
+        </div>
+        <div className="flex gap-1 flex-wrap justify-end">
+          {user.work_days && user.work_days.length > 0 ? (
+            user.work_days.map((day: number) => (
+              <span key={day} className="px-1.5 py-0.5 bg-ofa-red/20 text-ofa-red text-xs rounded">
+                {DAYS.find(d => d.value === day)?.label || day}
+              </span>
+            ))
+          ) : (
+            <span className="text-gray-600 text-xs">Geen werkdagen</span>
+          )}
+        </div>
+      </div>
+
+      <button
+        onClick={onEdit}
+        className="w-full py-2.5 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg text-sm transition font-medium min-h-[44px]"
+      >
+        Bewerken
+      </button>
+    </div>
   );
 }
 

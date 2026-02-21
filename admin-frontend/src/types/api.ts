@@ -116,6 +116,7 @@ export interface TodayStatus {
     clock_in: string;
     clock_out: string;
     came_by_car: boolean;
+    work_from_home: boolean;
   }>;
   on_leave: Array<{
     user_id: number;
@@ -195,6 +196,7 @@ export interface ClockEvent {
   came_by_car: boolean;
   parking_cost: number | null;
   km_driven: number | null;
+  work_from_home?: boolean;
 }
 
 export interface PendingClockEvent {
@@ -207,6 +209,7 @@ export interface PendingClockEvent {
   came_by_car: boolean;
   parking_cost: number | null;
   km_driven: number | null;
+  work_from_home?: boolean;
   requested_reason: string | null;
   created_at: string | null;
   status: string;
@@ -220,6 +223,7 @@ export interface CreateClockEventRequest {
   came_by_car?: boolean;
   parking_cost?: number | null;
   km_driven?: number | null;
+  work_from_home?: boolean;
 }
 
 export interface UpdateClockEventRequest {
@@ -228,6 +232,7 @@ export interface UpdateClockEventRequest {
   came_by_car?: boolean;
   parking_cost?: number | null;
   km_driven?: number | null;
+  work_from_home?: boolean;
 }
 
 export interface BulkEmailRequest {

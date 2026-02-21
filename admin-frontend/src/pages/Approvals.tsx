@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Activity, Palmtree, FileText, Car } from 'lucide-react';
+import { Activity, Palmtree, FileText, Car, Home as HomeIcon, Trash2 } from 'lucide-react';
 import { api } from '../utils/api';
 import { ApprovalModal } from '../components/ApprovalModal';
 import { EditClockEventModal } from '../components/EditClockEventModal';
@@ -150,6 +150,25 @@ function ClockEventCard({ event }: { event: any }) {
     },
   });
   
+  // Delete mutation (direct delete without rejection email prompt)
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      await api.delete(`/api/clock/${event.id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clock'] });
+    },
+    onError: (error: any) => {
+      alert(error.response?.data?.detail || 'Fout bij verwijderen');
+    },
+  });
+
+  const handleDelete = () => {
+    if (confirm(`Registratie van ${event.username} verwijderen?`)) {
+      deleteMutation.mutate();
+    }
+  };
+
   // Edit mutation
   const editMutation = useMutation({
     mutationFn: async (updates: any) => {
@@ -158,7 +177,8 @@ function ClockEventCard({ event }: { event: any }) {
         clock_out: updates.clock_out + ':00',
         came_by_car: updates.came_by_car,
         parking_cost: updates.parking_cost ? parseFloat(updates.parking_cost) : null,
-        km_driven: updates.km_driven ? parseFloat(updates.km_driven) : null
+        km_driven: updates.km_driven ? parseFloat(updates.km_driven) : null,
+        work_from_home: updates.work_from_home,
       });
     },
     onSuccess: () => {
@@ -228,6 +248,14 @@ function ClockEventCard({ event }: { event: any }) {
                   </p>
                 </div>
               )}
+              {event.work_from_home && (
+                <div>
+                  <p className="text-gray-400">Locatie</p>
+                  <p className="text-white font-medium flex items-center gap-1">
+                    <HomeIcon className="w-4 h-4" /> Thuis
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Reason */}
@@ -258,6 +286,14 @@ function ClockEventCard({ event }: { event: any }) {
               className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition text-sm font-medium"
             >
               Afwijzen
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 disabled:opacity-50 text-white rounded-lg transition text-sm font-medium"
+              title="Verwijderen"
+            >
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
         </div>

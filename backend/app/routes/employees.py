@@ -52,7 +52,8 @@ async def get_team_today(
             status = 'present'
             extra_info = {
                 'clock_in': clock_event.clock_in.strftime('%H:%M'),
-                'clock_out': clock_event.clock_out.strftime('%H:%M') if clock_event.clock_out else None
+                'clock_out': clock_event.clock_out.strftime('%H:%M') if clock_event.clock_out else None,
+                'work_from_home': clock_event.work_from_home or False
             }
             print(f"[TEAM-TODAY] {user.username} is PRESENT (clocked in at {extra_info['clock_in']})")
         elif absence:
@@ -62,9 +63,21 @@ async def get_team_today(
             }
             print(f"[TEAM-TODAY] {user.username} is on {status.upper()} leave")
         else:
-            # Not clocked in, not on leave - don't show them
-            print(f"[TEAM-TODAY] {user.username} not clocked in or on leave (skipping)")
-            continue
+            # Check if scheduled to work today
+            # WorkSchedule stores JS convention (0=Sun, 1=Mon, ..., 6=Sat)
+            # Python weekday() uses 0=Mon, 6=Sun, so convert: (py + 1) % 7
+            today_js = (today.weekday() + 1) % 7
+            schedule_today = db.query(WorkSchedule).filter(
+                WorkSchedule.user_id == user.id,
+                WorkSchedule.day_of_week == today_js
+            ).first()
+            if not schedule_today:
+                print(f"[TEAM-TODAY] {user.username} not scheduled today (skipping)")
+                continue
+            # Scheduled but not clocked in
+            status = 'not_clocked'
+            extra_info = {}
+            print(f"[TEAM-TODAY] {user.username} is SCHEDULED but not clocked in")
 
         team.append({
             'id': user.id,

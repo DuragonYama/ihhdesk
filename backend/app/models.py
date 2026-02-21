@@ -16,6 +16,9 @@ class User(Base):
     expected_weekly_hours = Column(DECIMAL(5, 2), nullable=True)
     has_km_compensation = Column(Boolean, default=False)
 
+    # Session management
+    force_logout = Column(Boolean, default=False)
+
     # Password reset fields
     reset_token = Column(String, nullable=True)
     reset_token_expires = Column(DateTime, nullable=True)
@@ -65,6 +68,7 @@ class ClockEvent(Base):
     came_by_car = Column(Boolean, default=False)
     parking_cost = Column(DECIMAL(10, 2), nullable=True)
     km_driven = Column(DECIMAL(10, 2), nullable=True)
+    work_from_home = Column(Boolean, default=False)
 
     status = Column(String, default='approved')  # 'pending' or 'approved'
     requested_reason = Column(Text, nullable=True)  # Reason for non-scheduled day

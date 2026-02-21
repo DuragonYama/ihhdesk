@@ -20,6 +20,7 @@ def clock_event_to_dict(event: ClockEvent) -> dict:
         "came_by_car": event.came_by_car,
         "parking_cost": float(event.parking_cost) if event.parking_cost else None,
         "km_driven": float(event.km_driven) if event.km_driven else None,
+        "work_from_home": event.work_from_home or False,
         "status": event.status if hasattr(event, 'status') else 'approved',
         "requested_reason": event.requested_reason if hasattr(event, 'requested_reason') else None
     }
@@ -71,6 +72,10 @@ async def create_clock_event(
 
     is_scheduled = event_weekday in py_scheduled_days
 
+    # Validate mutual exclusion
+    if event_data.came_by_car and event_data.work_from_home:
+        raise HTTPException(status_code=400, detail="Cannot be working from home and came by car at the same time")
+
     # Create clock event
     clock_event = ClockEvent(
         user_id=current_user.id,
@@ -80,6 +85,7 @@ async def create_clock_event(
         came_by_car=event_data.came_by_car,
         parking_cost=event_data.parking_cost,
         km_driven=event_data.km_driven,
+        work_from_home=event_data.work_from_home,
         status='approved' if is_scheduled else 'pending',
         requested_reason=event_data.reason if not is_scheduled else None
     )
@@ -126,6 +132,10 @@ async def clock_in(
     print(f"[CONVERSION] clock_in user={current_user.username}: JS days: {js_scheduled_days} → Python days: {py_scheduled_days}, Clock date weekday: {clock_date_weekday}")
 
     is_scheduled = clock_date_weekday in py_scheduled_days
+
+    # Validate mutual exclusion: can't be WFH and use car at the same time
+    if clock_data.came_by_car and clock_data.work_from_home:
+        raise HTTPException(status_code=400, detail="Cannot be working from home and came by car at the same time")
 
     # If not scheduled and no reason provided, reject
     if not is_scheduled and not clock_data.reason:
@@ -178,6 +188,7 @@ async def clock_in(
         came_by_car=clock_data.came_by_car,
         parking_cost=clock_data.parking_cost,
         km_driven=clock_data.km_driven,
+        work_from_home=clock_data.work_from_home,
         status='approved' if is_scheduled else 'pending',
         requested_reason=clock_data.reason if not is_scheduled else None
     )
@@ -334,6 +345,7 @@ async def get_all_clock_events(
             "came_by_car": event.came_by_car,
             "parking_cost": float(event.parking_cost) if event.parking_cost else None,
             "km_driven": float(event.km_driven) if event.km_driven else None,
+            "work_from_home": event.work_from_home or False,
         }
         result.append(event_dict)
 
@@ -364,6 +376,7 @@ async def get_pending_clock_events(
             "came_by_car": event.came_by_car,
             "parking_cost": float(event.parking_cost) if event.parking_cost else None,
             "km_driven": float(event.km_driven) if event.km_driven else None,
+            "work_from_home": event.work_from_home or False,
             "requested_reason": event.requested_reason,
             "created_at": event.created_at.isoformat() if event.created_at else None,
             "status": event.status
@@ -433,6 +446,8 @@ async def update_clock_event(
         event.parking_cost = update_data.parking_cost
     if update_data.km_driven is not None:
         event.km_driven = update_data.km_driven
+    if update_data.work_from_home is not None:
+        event.work_from_home = update_data.work_from_home
 
     event.modified_at = datetime.now()
     event.modified_by = current_user.id
@@ -597,7 +612,10 @@ async def edit_clock_event(
 
     if 'km_driven' in updates:
         event.km_driven = float(updates['km_driven']) if updates['km_driven'] else None
-    
+
+    if 'work_from_home' in updates:
+        event.work_from_home = updates['work_from_home']
+
     # Auto-approve after edit
     event.status = 'approved'
     

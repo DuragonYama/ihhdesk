@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Home as HomeIcon, Trash2 } from 'lucide-react';
 import { api } from '../utils/api';
 import type { ClockEvent, CreateClockEventRequest, UpdateClockEventRequest, User } from '../types/api';
 
@@ -117,7 +118,7 @@ export default function Timesheet() {
       </div>
 
       {/* Filters */}
-      <div className="bg-ofa-bg rounded-lg border border-neutral-800 p-6">
+      <div className="bg-ofa-bg rounded-lg border border-neutral-800 p-4 md:p-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Employee selector */}
           <div>
@@ -250,6 +251,25 @@ function EmployeeTimesheetSection({
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [editingEvent, setEditingEvent] = useState<(ClockEvent & { username: string }) | null>(null);
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: async (eventId: number) => {
+      await api.delete(`/api/clock/${eventId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-clock-events'] });
+    },
+    onError: (error: any) => {
+      alert(error.response?.data?.detail || 'Fout bij verwijderen');
+    },
+  });
+
+  const handleDelete = (event: ClockEvent & { username: string }) => {
+    if (confirm(`Registratie van ${formatDateNL(event.date)} voor ${event.username} verwijderen?`)) {
+      deleteMutation.mutate(event.id);
+    }
+  };
 
   // Calculate total hours
   const totalHours = events.reduce((sum, event) => {
@@ -262,7 +282,7 @@ function EmployeeTimesheetSection({
         {/* Header */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full px-6 py-4 flex items-center justify-between hover:bg-neutral-800/50 transition"
+          className="w-full px-4 py-3 md:px-6 md:py-4 flex items-center justify-between hover:bg-neutral-800/50 transition"
         >
           <div className="flex items-center gap-3">
             <span className="text-xl">{isExpanded ? '▼' : '▶'}</span>
@@ -281,7 +301,7 @@ function EmployeeTimesheetSection({
 
         {/* Events list */}
         {isExpanded && (
-          <div className="px-6 pb-6">
+          <div className="px-4 pb-4 md:px-6 md:pb-6">
             {events.length === 0 ? (
               <p className="text-gray-400 text-center py-8">Geen registraties in deze periode</p>
             ) : (
@@ -312,8 +332,13 @@ function EmployeeTimesheetSection({
                             </span>
                           </div>
 
-                          {/* Car info */}
-                          <div className="flex items-center gap-4 text-sm">
+                          {/* Location / car info */}
+                          <div className="flex items-center gap-4 text-sm flex-wrap">
+                            {event.work_from_home && (
+                              <span className="text-purple-400 flex items-center gap-1">
+                                <HomeIcon className="w-3 h-3" /> Thuis
+                              </span>
+                            )}
                             {event.came_by_car ? (
                               <>
                                 <span className="text-green-400">🚗 Auto</span>
@@ -329,18 +354,28 @@ function EmployeeTimesheetSection({
                                 )}
                               </>
                             ) : (
-                              <span className="text-gray-500">Geen auto</span>
+                              !event.work_from_home && <span className="text-gray-500">Geen auto</span>
                             )}
                           </div>
                         </div>
 
-                        {/* Action button */}
-                        <button
-                          onClick={() => setEditingEvent(event)}
-                          className="px-3 py-1 bg-neutral-700 hover:bg-neutral-600 text-white rounded transition text-sm"
-                        >
-                          Bewerken
-                        </button>
+                        {/* Action buttons */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setEditingEvent(event)}
+                            className="px-3 py-1 bg-neutral-700 hover:bg-neutral-600 text-white rounded transition text-sm"
+                          >
+                            Bewerken
+                          </button>
+                          <button
+                            onClick={() => handleDelete(event)}
+                            disabled={deleteMutation.isPending}
+                            className="px-3 py-1 bg-red-800 hover:bg-red-700 disabled:opacity-50 text-white rounded transition text-sm"
+                            title="Verwijderen"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -397,6 +432,7 @@ function CreateClockEventModal({
     clock_in_time: '09:00',
     clock_out_time: '17:00',
     came_by_car: false,
+    work_from_home: false,
     parking_cost: '',
     km_driven: '',
   });
@@ -502,15 +538,24 @@ function CreateClockEventModal({
             </div>
           </div>
 
-          <div>
+          <div className="space-y-2">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={formData.came_by_car}
-                onChange={(e) => setFormData({ ...formData, came_by_car: e.target.checked })}
+                onChange={(e) => setFormData({ ...formData, came_by_car: e.target.checked, work_from_home: e.target.checked ? false : formData.work_from_home })}
                 className="w-4 h-4"
               />
               <span className="text-sm text-gray-300">Met auto gekomen</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.work_from_home}
+                onChange={(e) => setFormData({ ...formData, work_from_home: e.target.checked, came_by_car: e.target.checked ? false : formData.came_by_car })}
+                className="w-4 h-4"
+              />
+              <span className="text-sm text-gray-300 flex items-center gap-1"><HomeIcon className="w-3 h-3" /> Thuiswerken</span>
             </label>
           </div>
 
@@ -580,6 +625,7 @@ function EditClockEventModal({
     clock_in: event.clock_in.substring(0, 5),
     clock_out: event.clock_out.substring(0, 5),
     came_by_car: event.came_by_car,
+    work_from_home: event.work_from_home || false,
     parking_cost: event.parking_cost?.toString() || '',
     km_driven: event.km_driven?.toString() || '',
   });
@@ -606,6 +652,7 @@ function EditClockEventModal({
       came_by_car: formData.came_by_car,
       parking_cost: formData.parking_cost ? Number(formData.parking_cost) : null,
       km_driven: formData.km_driven ? Number(formData.km_driven) : null,
+      work_from_home: formData.work_from_home,
     });
   };
 
@@ -648,15 +695,24 @@ function EditClockEventModal({
             </div>
           </div>
 
-          <div>
+          <div className="space-y-2">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={formData.came_by_car}
-                onChange={(e) => setFormData({ ...formData, came_by_car: e.target.checked })}
+                onChange={(e) => setFormData({ ...formData, came_by_car: e.target.checked, work_from_home: e.target.checked ? false : formData.work_from_home })}
                 className="w-4 h-4"
               />
               <span className="text-sm text-gray-300">Met auto gekomen</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.work_from_home}
+                onChange={(e) => setFormData({ ...formData, work_from_home: e.target.checked, came_by_car: e.target.checked ? false : formData.came_by_car })}
+                className="w-4 h-4"
+              />
+              <span className="text-sm text-gray-300 flex items-center gap-1"><HomeIcon className="w-3 h-3" /> Thuiswerken</span>
             </label>
           </div>
 

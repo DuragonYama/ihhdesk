@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Home as HomeIcon, Trash2 } from 'lucide-react';
 import { api } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import type { ClockEvent, ClockInRequest, UpdateClockEventRequest, CreateClockEventRequest, Absence } from '../types/api';
@@ -194,6 +195,7 @@ function NonScheduledModal({
 }) {
   const [reason, setReason] = useState('');
   const [cameByCar, setCameByCar] = useState(false);
+  const [workFromHome, setWorkFromHome] = useState(false);
   const [parkingCost, setParkingCost] = useState('');
   const [kmDriven, setKmDriven] = useState('');
 
@@ -207,6 +209,7 @@ function NonScheduledModal({
       came_by_car: cameByCar,
       parking_cost: cameByCar && parkingCost ? parseFloat(parkingCost) : undefined,
       km_driven: cameByCar && kmDriven ? parseFloat(kmDriven) : undefined,
+      work_from_home: workFromHome,
       reason: reason.trim(),
     });
   };
@@ -236,11 +239,24 @@ function NonScheduledModal({
               type="checkbox"
               id="car"
               checked={cameByCar}
-              onChange={(e) => setCameByCar(e.target.checked)}
+              onChange={(e) => { setCameByCar(e.target.checked); if (e.target.checked) setWorkFromHome(false); }}
               className="w-4 h-4 bg-neutral-900 border-neutral-700 rounded"
             />
             <label htmlFor="car" className="ml-2 text-sm text-white">
               Met de auto gekomen
+            </label>
+          </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="wfh"
+              checked={workFromHome}
+              onChange={(e) => { setWorkFromHome(e.target.checked); if (e.target.checked) setCameByCar(false); }}
+              className="w-4 h-4 bg-neutral-900 border-neutral-700 rounded"
+            />
+            <label htmlFor="wfh" className="ml-2 text-sm text-white">
+              Thuiswerken
             </label>
           </div>
 
@@ -301,12 +317,14 @@ function WeekEventsCard({
   scheduledDays,
   onEdit,
   onAdd,
+  onDelete,
 }: {
   events: ClockEvent[];
   absences: Absence[];
   scheduledDays: number[];
   onEdit: (event: ClockEvent) => void;
   onAdd: (date: string) => void;
+  onDelete: (event: ClockEvent) => void;
 }) {
   const week = getCurrentWeekDays();
   const weekStart = getCurrentWeekStart();
@@ -362,9 +380,11 @@ function WeekEventsCard({
                     {status.label}
                   </p>
                   {clockEvent && status.type === 'worked' && (
-                    <div className="flex gap-3 mt-1 text-xs text-gray-500">
+                    <div className="flex gap-3 mt-1 text-xs text-gray-500 flex-wrap">
                       <span>In: {clockEvent.clock_in}</span>
                       <span>Uit: {clockEvent.clock_out}</span>
+                      {clockEvent.work_from_home && <span className="text-purple-400 flex items-center gap-1"><HomeIcon className="w-3 h-3" /> Thuis</span>}
+                      {clockEvent.came_by_car && <span className="text-gray-400">🚗 Auto</span>}
                       {clockEvent.status === 'pending' && (
                         <span className="text-yellow-400">⏳ Pending</span>
                       )}
@@ -383,12 +403,21 @@ function WeekEventsCard({
                   )}
 
                   {canEdit && (
-                    <button
-                      onClick={() => onEdit(clockEvent)}
-                      className="px-3 py-1 bg-neutral-700 hover:bg-neutral-600 text-white text-sm rounded transition"
-                    >
-                      Bewerken
-                    </button>
+                    <>
+                      <button
+                        onClick={() => onEdit(clockEvent)}
+                        className="px-3 py-1 bg-neutral-700 hover:bg-neutral-600 text-white text-sm rounded transition"
+                      >
+                        Bewerken
+                      </button>
+                      <button
+                        onClick={() => onDelete(clockEvent)}
+                        className="px-3 py-1 bg-red-800 hover:bg-red-700 text-white text-sm rounded transition"
+                        title="Verwijderen"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -420,6 +449,7 @@ function CreateClockEventModal({
     clock_in: defaultStart,
     clock_out: defaultEnd,
     came_by_car: false,
+    work_from_home: false,
     parking_cost: '',
     km_driven: '',
     reason: '',
@@ -434,6 +464,7 @@ function CreateClockEventModal({
         came_by_car: data.came_by_car,
         parking_cost: data.parking_cost ? parseFloat(data.parking_cost) : null,
         km_driven: data.km_driven ? parseFloat(data.km_driven) : null,
+        work_from_home: data.work_from_home,
         reason: data.reason || null,
       });
       return response.data;
@@ -517,17 +548,28 @@ function CreateClockEventModal({
             </div>
           </div>
 
-          <div>
+          <div className="space-y-2">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={formData.came_by_car}
                 onChange={(e) =>
-                  setFormData({ ...formData, came_by_car: e.target.checked })
+                  setFormData({ ...formData, came_by_car: e.target.checked, work_from_home: e.target.checked ? false : formData.work_from_home })
                 }
                 className="w-4 h-4"
               />
               <span className="text-white text-sm">Met auto gekomen</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.work_from_home}
+                onChange={(e) =>
+                  setFormData({ ...formData, work_from_home: e.target.checked, came_by_car: e.target.checked ? false : formData.came_by_car })
+                }
+                className="w-4 h-4"
+              />
+              <span className="text-white text-sm">Thuiswerken</span>
             </label>
           </div>
 
@@ -617,6 +659,7 @@ function EditEventModal({
   const [clockIn, setClockIn] = useState(event.clock_in);
   const [clockOut, setClockOut] = useState(event.clock_out);
   const [cameByCar, setCameByCar] = useState(event.came_by_car);
+  const [workFromHome, setWorkFromHome] = useState(event.work_from_home || false);
   const [parkingCost, setParkingCost] = useState(
     event.parking_cost?.toString() || ''
   );
@@ -646,6 +689,7 @@ function EditEventModal({
       came_by_car: cameByCar,
       parking_cost: cameByCar && parkingCost ? parseFloat(parkingCost) : null,
       km_driven: cameByCar && kmDriven ? parseFloat(kmDriven) : null,
+      work_from_home: workFromHome,
     });
   };
 
@@ -683,11 +727,24 @@ function EditEventModal({
               type="checkbox"
               id="edit-car"
               checked={cameByCar}
-              onChange={(e) => setCameByCar(e.target.checked)}
+              onChange={(e) => { setCameByCar(e.target.checked); if (e.target.checked) setWorkFromHome(false); }}
               className="w-4 h-4 bg-neutral-900 border-neutral-700 rounded"
             />
             <label htmlFor="edit-car" className="ml-2 text-sm text-white">
               Met de auto gekomen
+            </label>
+          </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="edit-wfh"
+              checked={workFromHome}
+              onChange={(e) => { setWorkFromHome(e.target.checked); if (e.target.checked) setCameByCar(false); }}
+              className="w-4 h-4 bg-neutral-900 border-neutral-700 rounded"
+            />
+            <label htmlFor="edit-wfh" className="ml-2 text-sm text-white">
+              Thuiswerken
             </label>
           </div>
 
@@ -820,6 +877,25 @@ export default function Clock() {
     },
   });
 
+  // Delete event mutation
+  const deleteEventMutation = useMutation({
+    mutationFn: async (eventId: number) => {
+      await api.delete(`/api/clock/${eventId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clock'] });
+    },
+    onError: (error: any) => {
+      alert(error.response?.data?.detail || 'Fout bij verwijderen');
+    },
+  });
+
+  const handleDeleteEvent = (event: ClockEvent) => {
+    if (confirm(`Wil je de registratie van ${event.date} verwijderen?`)) {
+      deleteEventMutation.mutate(event.id);
+    }
+  };
+
   // Clock out mutation
   const clockOutMutation = useMutation({
     mutationFn: async () => {
@@ -846,6 +922,7 @@ export default function Clock() {
         scheduledDays={user?.work_days || []}
         onEdit={setEditingEvent}
         onAdd={setCreatingEventForDate}
+        onDelete={handleDeleteEvent}
       />
 
       {/* Modals */}

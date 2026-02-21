@@ -148,13 +148,14 @@ async def set_work_schedule(
             raise HTTPException(status_code=400, detail="Day must be between 0 (Monday) and 6 (Sunday)")
     
     db.query(WorkSchedule).filter(WorkSchedule.user_id == user_id).delete()
-    
+
     for day in schedule.days:
         work_day = WorkSchedule(user_id=user_id, day_of_week=day)
         db.add(work_day)
-    
+
+    user.force_logout = True
     db.commit()
-    
+
     return {"message": "Work schedule updated", "days": schedule.days}
 
 @router.patch("/{user_id}", response_model=UserResponse)
@@ -187,8 +188,9 @@ async def update_user(
     
     if update_data.has_km_compensation is not None:
         user.has_km_compensation = update_data.has_km_compensation
-    
+
+    user.force_logout = True
     db.commit()
     db.refresh(user)
-    
+
     return user

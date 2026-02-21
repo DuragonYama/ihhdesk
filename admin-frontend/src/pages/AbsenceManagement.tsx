@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Trash2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../utils/api';
 import type { User, Absence, ApproveRejectRequest, AdminCreateAbsenceRequest, UpdateAbsenceRequest } from '../types/api';
@@ -487,9 +488,10 @@ function AbsenceItem({
           </button>
           <button
             onClick={() => onDelete(absence)}
-            className="px-3 py-1.5 border border-red-600 hover:bg-red-600/20 text-red-400 text-sm rounded-lg transition"
+            className="p-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded transition"
+            title="Verwijderen"
           >
-            Verwijderen
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>

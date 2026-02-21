@@ -17,6 +17,7 @@ export interface ClockEvent {
   came_by_car: boolean;
   parking_cost: number | null;
   km_driven: number | null;
+  work_from_home?: boolean;
   status?: string;
   requested_reason?: string | null;
 }
@@ -63,6 +64,7 @@ export interface ClockInRequest {
   came_by_car: boolean;
   parking_cost?: number;
   km_driven?: number;
+  work_from_home?: boolean;
   reason?: string;
 }
 
@@ -72,6 +74,7 @@ export interface UpdateClockEventRequest {
   came_by_car?: boolean;
   parking_cost?: number | null;
   km_driven?: number | null;
+  work_from_home?: boolean;
 }
 
 export interface CreateClockEventRequest {
@@ -81,6 +84,7 @@ export interface CreateClockEventRequest {
   came_by_car: boolean;
   parking_cost?: number;
   km_driven?: number;
+  work_from_home?: boolean;
   reason?: string;
 }
 

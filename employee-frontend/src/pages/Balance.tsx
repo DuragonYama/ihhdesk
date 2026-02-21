@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Home as HomeIcon } from 'lucide-react';
 import { api } from '../utils/api';
 import type { MyBalance } from '../types/api';
 
@@ -200,6 +201,9 @@ export default function Balance() {
                     }`}>
                       {detail.balance_change >= 0 ? '+' : ''}{formatHours(Math.abs(detail.balance_change))}
                     </p>
+                    {detail.work_from_home && (
+                      <p className="text-xs text-purple-400 flex items-center gap-1 justify-end"><HomeIcon className="w-3 h-3" /> Thuis</p>
+                    )}
                     {detail.came_by_car && (
                       <p className="text-xs text-gray-400">🚗 Auto</p>
                     )}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Users, CheckCircle, Activity, AlertTriangle, CircleDot, Circle, Car, ChevronDown, ChevronRight } from 'lucide-react';
+import { Users, CheckCircle, Activity, AlertTriangle, CircleDot, Circle, Car, Home as HomeIcon, ChevronDown, ChevronRight } from 'lucide-react';
 import { api } from '../utils/api';
 import type { TodayStatus, Absence } from '../types/api';
 
@@ -96,20 +96,20 @@ export default function Dashboard() {
       {totalPendingCount > 0 && (
         <button
           onClick={() => navigate('/approvals')}
-          className="w-full bg-red-900/30 border-2 border-red-500 rounded-lg p-4 hover:bg-red-900/50 transition"
+          className="w-full bg-red-900/30 border-2 border-red-500 rounded-lg p-3 md:p-4 hover:bg-red-900/50 transition"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-7 h-7 text-white" />
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-red-600 rounded-full flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 md:w-7 md:h-7 text-white" />
               </div>
-              <div className="text-left">
-                <p className="text-white font-bold text-lg">Wachtende Goedkeuringen</p>
+              <div className="text-left min-w-0">
+                <p className="text-white font-bold text-base md:text-lg">Wachtende Goedkeuringen</p>
                 <p className="text-red-300 text-sm">
-                  {totalPendingCount} {totalPendingCount === 1 ? 'aanvraag wacht' : 'aanvragen wachten'} op jouw goedkeuring
+                  {totalPendingCount} {totalPendingCount === 1 ? 'aanvraag wacht' : 'aanvragen wachten'} op goedkeuring
                 </p>
                 {(pendingAbsencesCount > 0 || pendingClockEventsCount > 0 || pendingEventsCount > 0) && (
-                  <p className="text-red-200 text-xs mt-1">
+                  <p className="text-red-200 text-xs mt-1 hidden sm:block">
                     {pendingAbsencesCount > 0 && `${pendingAbsencesCount} verlof`}
                     {pendingAbsencesCount > 0 && (pendingClockEventsCount > 0 || pendingEventsCount > 0) && ' • '}
                     {pendingClockEventsCount > 0 && `${pendingClockEventsCount} uren`}
@@ -119,11 +119,11 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="px-4 py-2 bg-red-600 text-white rounded-full text-xl font-bold">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="px-3 py-1 md:px-4 md:py-2 bg-red-600 text-white rounded-full text-lg md:text-xl font-bold">
                 {totalPendingCount}
               </span>
-              <span className="text-red-300 text-2xl">→</span>
+              <span className="text-red-300 text-xl hidden sm:block">→</span>
             </div>
           </div>
         </button>
@@ -187,6 +187,11 @@ export default function Dashboard() {
                   <p className="text-white text-sm">
                     Uit: <span className="font-mono">{employee.clock_out ? employee.clock_out.substring(0, 5) : '-'}</span>
                   </p>
+                  {employee.work_from_home && (
+                    <p className="text-purple-400 text-xs mt-1 flex items-center gap-1">
+                      <HomeIcon className="w-3 h-3" /> Thuis
+                    </p>
+                  )}
                   {employee.came_by_car && (
                     <p className="text-gray-400 text-xs mt-1 flex items-center gap-1">
                       <Car className="w-3 h-3" /> Met auto
@@ -284,11 +289,11 @@ export default function Dashboard() {
 // Helper Components
 function StatCard({ title, value, icon, color }: { title: string; value: number; icon: React.ReactNode; color: string }) {
   return (
-    <div className={`${color} border border-neutral-700 rounded-lg p-6`}>
+    <div className={`${color} border border-neutral-700 rounded-lg p-4 md:p-6`}>
       <div className="flex items-center justify-between">
         <div>
           <p className="text-gray-400 text-sm">{title}</p>
-          <p className="text-white text-3xl font-bold mt-2">{value}</p>
+          <p className="text-white text-3xl font-bold mt-1 md:mt-2">{value}</p>
         </div>
         <div>{icon}</div>
       </div>
@@ -313,17 +318,17 @@ function Section({
     <div className="bg-ofa-bg rounded-lg border border-neutral-800 overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-neutral-800/50 transition"
+        className="w-full px-4 py-3 md:px-6 md:py-4 flex items-center justify-between hover:bg-neutral-800/50 transition"
       >
         <div className="flex items-center gap-3">
           {isOpen ? <ChevronDown className="w-5 h-5 text-gray-400" /> : <ChevronRight className="w-5 h-5 text-gray-400" />}
-          <h2 className="text-lg font-bold text-white">{title}</h2>
+          <h2 className="text-base md:text-lg font-bold text-white">{title}</h2>
           <span className="px-3 py-1 bg-ofa-red rounded-full text-white text-sm font-medium">
             {count}
           </span>
         </div>
       </button>
-      {isOpen && <div className="px-6 pb-6">{children}</div>}
+      {isOpen && <div className="px-4 pb-4 md:px-6 md:pb-6">{children}</div>}
     </div>
   );
 }

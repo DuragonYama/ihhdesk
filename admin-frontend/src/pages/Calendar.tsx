@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Trash2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../utils/api';
 import type { CalendarEvent, CompanyHoliday, EventCategory, CreateCategoryRequest, CreateEventRequest, CreateHolidayRequest, User } from '../types/api';
@@ -79,16 +80,16 @@ export default function Calendar() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Kalender</h1>
           <p className="text-gray-400 mt-1">Evenementen en bedrijfsvakanties</p>
         </div>
         <button
           onClick={() => setShowBulkAbsenceModal(true)}
-          className="px-4 py-2 bg-ofa-red hover:bg-ofa-red-hover text-white rounded-lg transition font-medium"
+          className="w-full sm:w-auto px-4 py-2.5 bg-ofa-red hover:bg-ofa-red-hover text-white rounded-lg transition font-medium min-h-[44px]"
         >
-          + Massa Verlof Toevoegen
+          + Massa Verlof
         </button>
       </div>
 
@@ -195,9 +196,9 @@ function CalendarGrid({
   };
 
   return (
-    <div className="bg-ofa-bg rounded-lg border border-neutral-800 p-6">
+    <div className="bg-ofa-bg rounded-lg border border-neutral-800 p-3 md:p-6">
       {/* Header with navigation */}
-      <div className="flex items-center justify-between mb-6 gap-4">
+      <div className="flex items-center justify-between mb-4 md:mb-6 gap-2 md:gap-4">
         {/* Left arrow - fixed width */}
         <button
           onClick={onPrevMonth}
@@ -261,10 +262,10 @@ function CalendarGrid({
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1 md:gap-2">
         {/* Day headers */}
         {['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'].map((day) => (
-          <div key={day} className="text-center text-gray-400 font-medium py-2">
+          <div key={day} className="text-center text-gray-400 font-medium py-1 md:py-2 text-xs md:text-sm">
             {day}
           </div>
         ))}
@@ -273,17 +274,17 @@ function CalendarGrid({
         {days.map((day, index) => {
           const { events: dayEvents, holidays: dayHolidays } = getDayItems(day);
           const isToday = day && new Date().toDateString() === new Date(year, month, day).toDateString();
-          
+
           return (
             <div
               key={index}
-              className={`min-h-24 p-2 border border-neutral-700 rounded-lg ${
+              className={`min-h-14 md:min-h-24 p-1 md:p-2 border border-neutral-700 rounded-lg ${
                 day ? 'bg-neutral-900' : 'bg-transparent border-transparent'
               } ${isToday ? 'ring-2 ring-ofa-red' : ''}`}
             >
               {day && (
                 <>
-                  <div className={`text-sm font-medium mb-1 ${isToday ? 'text-ofa-red' : 'text-white'}`}>
+                  <div className={`text-xs md:text-sm font-medium mb-0.5 md:mb-1 ${isToday ? 'text-ofa-red' : 'text-white'}`}>
                     {day}
                   </div>
                   
@@ -394,34 +395,34 @@ function HolidaysSection({
 
   return (
     <div className="bg-ofa-bg rounded-lg border border-neutral-800 overflow-hidden">
-      <div className="w-full px-6 py-4 flex items-center justify-between">
+      <div className="px-4 md:px-6 py-3 md:py-4 flex flex-col sm:flex-row sm:items-center gap-3">
         <button
           onClick={onToggle}
           className="flex items-center gap-3 hover:opacity-80 transition"
         >
           <span className="text-xl">{isOpen ? '▼' : '▶'}</span>
-          <h2 className="text-lg font-bold text-white">
-            {/* ICON: Holiday icon */} Bedrijfsvakanties - {monthName} {year}
+          <h2 className="text-base md:text-lg font-bold text-white">
+            Bedrijfsvakanties - {monthName} {year}
           </h2>
           <span className="px-3 py-1 bg-purple-600 rounded-full text-white text-sm font-medium">
             {holidays.length}
           </span>
         </button>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 sm:ml-auto flex-wrap">
           <button
             onClick={handleImport}
             disabled={importMutation.isPending}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-neutral-700 text-white rounded-lg transition"
+            className="flex-1 sm:flex-none px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-neutral-700 text-white rounded-lg transition text-sm min-h-[40px]"
           >
-            {importMutation.isPending ? 'Importeren...' : `Importeer NL Feestdagen ${currentMonth.getFullYear()}`}
+            {importMutation.isPending ? 'Importeren...' : `NL Feestdagen ${currentMonth.getFullYear()}`}
           </button>
 
           <button
             onClick={() => setShowModal(true)}
-            className="px-4 py-2 bg-ofa-red hover:bg-ofa-red-hover text-white rounded-lg transition"
+            className="flex-1 sm:flex-none px-3 py-2 bg-ofa-red hover:bg-ofa-red-hover text-white rounded-lg transition text-sm min-h-[40px]"
           >
-            + Nieuwe Vakantie
+            + Vakantie
           </button>
         </div>
       </div>
@@ -447,9 +448,10 @@ function HolidaysSection({
                         deleteMutation.mutate(holiday.id);
                       }
                     }}
-                    className="px-3 py-1 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded transition"
+                    className="p-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded transition"
+                    title="Verwijderen"
                   >
-                    Verwijderen
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               ))}
@@ -518,25 +520,25 @@ function EventsSection({
 
   return (
     <div className="bg-ofa-bg rounded-lg border border-neutral-800 overflow-hidden">
-      <div className="w-full px-6 py-4 flex items-center justify-between">
+      <div className="px-4 md:px-6 py-3 md:py-4 flex flex-col sm:flex-row sm:items-center gap-3">
         <button
           onClick={onToggle}
           className="flex items-center gap-3 hover:opacity-80 transition"
         >
           <span className="text-xl">{isOpen ? '▼' : '▶'}</span>
-          <h2 className="text-lg font-bold text-white">
-            {/* ICON: Event icon */} Evenementen - {monthName} {year}
+          <h2 className="text-base md:text-lg font-bold text-white">
+            Evenementen - {monthName} {year}
           </h2>
           <span className="px-3 py-1 bg-ofa-red rounded-full text-white text-sm font-medium">
             {filteredEvents.length}
           </span>
         </button>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:ml-auto flex-wrap">
           <select
             value={eventFilter}
             onChange={(e) => setEventFilter(e.target.value as 'all' | 'upcoming' | 'past')}
-            className="px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white"
+            className="flex-1 sm:flex-none px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white text-sm min-h-[40px]"
           >
             <option value="upcoming">Aankomend</option>
             <option value="all">Alles</option>
@@ -544,9 +546,9 @@ function EventsSection({
           </select>
           <button
             onClick={() => setShowModal(true)}
-            className="px-4 py-2 bg-ofa-red hover:bg-ofa-red-hover text-white rounded-lg transition"
+            className="flex-1 sm:flex-none px-3 py-2 bg-ofa-red hover:bg-ofa-red-hover text-white rounded-lg transition text-sm min-h-[40px]"
           >
-            + Nieuw Evenement
+            + Evenement
           </button>
         </div>
       </div>
@@ -607,9 +609,10 @@ function EventsSection({
                               deleteMutation.mutate(event.id);
                             }
                           }}
-                          className="px-3 py-1 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded transition"
+                          className="p-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded transition"
+                          title="Verwijderen"
                         >
-                          Verwijderen
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -665,15 +668,13 @@ function CategoriesSection({
 
   return (
     <div className="bg-ofa-bg rounded-lg border border-neutral-800 overflow-hidden">
-      <div className="w-full px-6 py-4 flex items-center justify-between">
+      <div className="px-4 md:px-6 py-3 md:py-4 flex items-center justify-between gap-3">
         <button
           onClick={onToggle}
           className="flex items-center gap-3 hover:opacity-80 transition"
         >
           <span className="text-xl">{isOpen ? '▼' : '▶'}</span>
-          <h2 className="text-lg font-bold text-white">
-            {/* ICON: Category icon */} Categorieën
-          </h2>
+          <h2 className="text-base md:text-lg font-bold text-white">Categorieën</h2>
           <span className="px-3 py-1 bg-ofa-red rounded-full text-white text-sm font-medium">
             {categories.length}
           </span>
@@ -681,9 +682,9 @@ function CategoriesSection({
 
         <button
           onClick={() => setShowModal(true)}
-          className="px-4 py-2 bg-ofa-red hover:bg-ofa-red-hover text-white rounded-lg transition"
+          className="px-3 py-2 bg-ofa-red hover:bg-ofa-red-hover text-white rounded-lg transition text-sm min-h-[40px]"
         >
-          + Nieuwe Categorie
+          + Categorie
         </button>
       </div>
 
@@ -711,9 +712,10 @@ function CategoriesSection({
                         deleteMutation.mutate(category.id);
                       }
                     }}
-                    className="px-3 py-1 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded transition"
+                    className="p-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded transition"
+                    title="Verwijderen"
                   >
-                    Verwijderen
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               ))}

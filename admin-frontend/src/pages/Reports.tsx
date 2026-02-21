@@ -76,18 +76,18 @@ export default function Reports() {
   return (
     <div className="space-y-6">
       {/* Header with Controls */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Rapporten</h1>
           <p className="text-gray-400 mt-1">{balances.length} medewerkers</p>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Month Selector */}
           <select
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
-            className="px-4 py-2 bg-ofa-bg border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-ofa-red"
+            className="flex-1 sm:flex-none px-4 py-2 bg-ofa-bg border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-ofa-red min-h-[44px]"
           >
             {months.map((monthName, index) => (
               <option key={index} value={index + 1}>
@@ -100,7 +100,7 @@ export default function Reports() {
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="px-4 py-2 bg-ofa-bg border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-ofa-red"
+            className="flex-1 sm:flex-none px-4 py-2 bg-ofa-bg border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-ofa-red min-h-[44px]"
           >
             {[2024, 2025, 2026, 2027, 2028].map((y) => (
               <option key={y} value={y}>
@@ -112,7 +112,7 @@ export default function Reports() {
           {/* Download Button */}
           <button
             onClick={handleDownloadCSV}
-            className="px-6 py-2 bg-ofa-red hover:bg-ofa-red-hover text-white rounded-lg font-medium transition flex items-center gap-2"
+            className="w-full sm:w-auto px-6 py-2 bg-ofa-red hover:bg-ofa-red-hover text-white rounded-lg font-medium transition flex items-center justify-center gap-2 min-h-[44px]"
           >
             <span>⬇</span>
             Download CSV
@@ -131,7 +131,79 @@ export default function Reports() {
         </div>
       ) : (
         <div className="bg-ofa-bg rounded-lg border border-neutral-800 overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Mobile cards */}
+          <div className="md:hidden divide-y divide-neutral-800">
+            {balances.map((balance: EmployeeBalance) => (
+              <div key={balance.user_id} className="p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-ofa-red rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                    {balance.username.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">{balance.username}</p>
+                    <p className="text-gray-500 text-xs">{balance.expected_weekly_hours}u/week verwacht</p>
+                  </div>
+                  <div className="ml-auto text-right">
+                    <p className="text-gray-500 text-xs">Balans</p>
+                    <p className={`font-bold text-lg ${
+                      balance.balance > 0 ? 'text-green-400' : balance.balance < 0 ? 'text-red-400' : 'text-gray-400'
+                    }`}>
+                      {balance.balance > 0 ? '+' : ''}{balance.balance.toFixed(2)}u
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="bg-neutral-800 rounded p-2">
+                    <p className="text-gray-500 text-xs">Extra</p>
+                    <p className="text-green-400 font-medium">{balance.extra_hours.toFixed(2)}u</p>
+                  </div>
+                  <div className="bg-neutral-800 rounded p-2">
+                    <p className="text-gray-500 text-xs">Tekort</p>
+                    <p className="text-red-400 font-medium">{balance.missing_hours.toFixed(2)}u</p>
+                  </div>
+                  <div className="bg-neutral-800 rounded p-2">
+                    <p className="text-gray-500 text-xs">Parkeren</p>
+                    <p className="text-gray-300">€{balance.total_parking.toFixed(2)}</p>
+                  </div>
+                  <div className="bg-neutral-800 rounded p-2">
+                    <p className="text-gray-500 text-xs">KM / Vergoed</p>
+                    <p className="text-gray-300">{balance.total_km.toFixed(1)} / €{(balance.total_km * 0.23).toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {/* Mobile totals */}
+            <div className="p-4 bg-neutral-800 space-y-2">
+              <p className="text-white font-bold">TOTAAL</p>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className="text-gray-500 text-xs">Extra</p>
+                  <p className="text-green-400 font-medium">{totals.extra_hours.toFixed(2)}u</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs">Tekort</p>
+                  <p className="text-red-400 font-medium">{totals.missing_hours.toFixed(2)}u</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs">Balans</p>
+                  <p className={`font-bold ${totals.balance > 0 ? 'text-green-400' : totals.balance < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                    {totals.balance > 0 ? '+' : ''}{totals.balance.toFixed(2)}u
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs">Parkeren</p>
+                  <p className="text-white">€{totals.total_parking.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs">KM / Vergoed</p>
+                  <p className="text-white">{totals.total_km.toFixed(1)} / €{(totals.total_km * 0.23).toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-neutral-800">
                 <tr>

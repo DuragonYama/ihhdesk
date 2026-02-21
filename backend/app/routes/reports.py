@@ -168,7 +168,8 @@ async def get_today_status(
                 'email': employee.email,
                 'clock_in': str(ce.clock_in),
                 'clock_out': str(ce.clock_out),
-                'came_by_car': ce.came_by_car
+                'came_by_car': ce.came_by_car,
+                'work_from_home': ce.work_from_home or False
             })
             continue
 

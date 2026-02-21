@@ -53,6 +53,7 @@ class ClockInRequest(BaseModel):
     came_by_car: bool = False
     parking_cost: Optional[float] = None
     km_driven: Optional[float] = None
+    work_from_home: bool = False
     reason: Optional[str] = None  # For non-scheduled days
 
 class ClockEventResponse(BaseModel):
@@ -64,6 +65,7 @@ class ClockEventResponse(BaseModel):
     came_by_car: bool
     parking_cost: Optional[float]
     km_driven: Optional[float]
+    work_from_home: bool = False
     status: Optional[str] = 'approved'
     requested_reason: Optional[str] = None
 
@@ -76,6 +78,7 @@ class ClockEventUpdate(BaseModel):
     came_by_car: Optional[bool] = None
     parking_cost: Optional[float] = None
     km_driven: Optional[float] = None
+    work_from_home: Optional[bool] = None
 
 class CreateClockEventRequest(BaseModel):
     date: str  # YYYY-MM-DD
@@ -84,6 +87,7 @@ class CreateClockEventRequest(BaseModel):
     came_by_car: bool
     parking_cost: Optional[float] = None
     km_driven: Optional[float] = None
+    work_from_home: bool = False
     reason: Optional[str] = None  # For non-scheduled days
 
 # Absence Schemas

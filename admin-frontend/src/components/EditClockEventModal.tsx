@@ -17,6 +17,7 @@ export function EditClockEventModal({
     clock_in: event.clock_in?.substring(0, 5) || '10:00',
     clock_out: event.clock_out?.substring(0, 5) || '18:00',
     came_by_car: event.came_by_car || false,
+    work_from_home: event.work_from_home || false,
     parking_cost: event.parking_cost || '',
     km_driven: event.km_driven || ''
   });
@@ -58,10 +59,21 @@ export function EditClockEventModal({
             <input
               type="checkbox"
               checked={formData.came_by_car}
-              onChange={(e) => setFormData({ ...formData, came_by_car: e.target.checked })}
+              onChange={(e) => setFormData({ ...formData, came_by_car: e.target.checked, work_from_home: e.target.checked ? false : formData.work_from_home })}
               className="w-4 h-4"
             />
             <span className="text-white">Met auto gekomen</span>
+          </label>
+
+          {/* WFH checkbox */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.work_from_home}
+              onChange={(e) => setFormData({ ...formData, work_from_home: e.target.checked, came_by_car: e.target.checked ? false : formData.came_by_car })}
+              className="w-4 h-4"
+            />
+            <span className="text-white">Thuiswerken</span>
           </label>
 
           {/* Car details (if checked) */}

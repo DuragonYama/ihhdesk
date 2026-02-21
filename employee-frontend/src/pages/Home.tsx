@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Activity, Palmtree, FileText, Clock as ClockIcon, CheckCircle, Euro, MapPin } from 'lucide-react';
+import { Activity, Palmtree, FileText, Clock as ClockIcon, CheckCircle, XCircle, Euro, MapPin, Car, Home as HomeIcon } from 'lucide-react';
 import { api } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import type { MyBalance, Absence, TeamStatus } from '../types/api';
@@ -49,6 +49,8 @@ function getCurrentWeek() {
 function ClockStatusCard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [showClockInOptions, setShowClockInOptions] = useState(false);
+  const [clockInOptions, setClockInOptions] = useState({ came_by_car: false, work_from_home: false, parking_cost: '', km_driven: '' });
 
   // Check if today is a scheduled work day
   const today = new Date().getDay();
@@ -99,11 +101,12 @@ function ClockStatusCard() {
 
   // Clock in mutation
   const clockInMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (options: { came_by_car: boolean; work_from_home: boolean; parking_cost: string; km_driven: string }) => {
       const response = await api.post('/api/clock/in', {
-        came_by_car: false,
-        parking_cost: null,
-        km_driven: null,
+        came_by_car: options.came_by_car,
+        work_from_home: options.work_from_home,
+        parking_cost: options.came_by_car && options.parking_cost ? parseFloat(options.parking_cost) : null,
+        km_driven: options.came_by_car && options.km_driven ? parseFloat(options.km_driven) : null,
       });
       return response.data;
     },
@@ -169,12 +172,98 @@ function ClockStatusCard() {
     return (
       <div className="bg-ofa-bg border border-neutral-800 rounded-lg p-6">
         <button
-          onClick={() => clockInMutation.mutate()}
+          onClick={() => setShowClockInOptions(true)}
           disabled={clockInMutation.isPending}
           className="w-full h-20 bg-green-600 hover:bg-green-700 disabled:bg-neutral-700 text-white text-xl font-bold rounded-lg transition"
         >
           {clockInMutation.isPending ? 'Inklokken...' : 'Inklokken'}
         </button>
+
+        {showClockInOptions && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-ofa-bg border border-neutral-800 rounded-lg p-6 max-w-sm w-full">
+              <h3 className="text-xl font-bold text-white mb-4">Inklokken</h3>
+
+              <div className="space-y-3 mb-6">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={clockInOptions.came_by_car}
+                    onChange={(e) => setClockInOptions({
+                      ...clockInOptions,
+                      came_by_car: e.target.checked,
+                      work_from_home: e.target.checked ? false : clockInOptions.work_from_home,
+                      parking_cost: '',
+                      km_driven: '',
+                    })}
+                    className="w-5 h-5"
+                  />
+                  <span className="text-white flex items-center gap-2"><Car className="w-4 h-4" /> Met auto gekomen</span>
+                </label>
+
+                {clockInOptions.came_by_car && (
+                  <div className="ml-8 space-y-3">
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-1">Parkeerkosten (€)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={clockInOptions.parking_cost}
+                        onChange={(e) => setClockInOptions({ ...clockInOptions, parking_cost: e.target.value })}
+                        placeholder="0.00"
+                        className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white focus:border-ofa-red focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-1">Kilometers gereden</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={clockInOptions.km_driven}
+                        onChange={(e) => setClockInOptions({ ...clockInOptions, km_driven: e.target.value })}
+                        placeholder="0.0"
+                        className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white focus:border-ofa-red focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={clockInOptions.work_from_home}
+                    onChange={(e) => setClockInOptions({
+                      ...clockInOptions,
+                      work_from_home: e.target.checked,
+                      came_by_car: e.target.checked ? false : clockInOptions.came_by_car,
+                    })}
+                    className="w-5 h-5"
+                  />
+                  <span className="text-white flex items-center gap-2"><HomeIcon className="w-4 h-4" /> Thuiswerken</span>
+                </label>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowClockInOptions(false); setClockInOptions({ came_by_car: false, work_from_home: false, parking_cost: '', km_driven: '' }); }}
+                  className="flex-1 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg transition"
+                >
+                  Annuleren
+                </button>
+                <button
+                  onClick={() => {
+                    clockInMutation.mutate(clockInOptions);
+                    setShowClockInOptions(false);
+                    setClockInOptions({ came_by_car: false, work_from_home: false, parking_cost: '', km_driven: '' });
+                  }}
+                  className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
+                >
+                  Inklokken
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -226,6 +315,16 @@ function ClockStatusCard() {
             {formatHoursMinutes(hours)}
           </span>
         </div>
+        {todayEvent.work_from_home && (
+          <div className="flex items-center gap-2 text-sm text-purple-400 pt-1">
+            <HomeIcon className="w-4 h-4" /> Thuiswerken
+          </div>
+        )}
+        {todayEvent.came_by_car && (
+          <div className="flex items-center gap-2 text-sm text-gray-400 pt-1">
+            <Car className="w-4 h-4" /> Met auto
+          </div>
+        )}
       </div>
     </div>
   );
@@ -337,6 +436,7 @@ function TeamTodayCard() {
 
   // Count by status
   const present = team.filter((m: any) => m.status === 'present').length;
+  const notClocked = team.filter((m: any) => m.status === 'not_clocked').length;
   const sick = team.filter((m: any) => m.status === 'sick').length;
   const vacation = team.filter((m: any) => m.status === 'vacation').length;
   const personal = team.filter((m: any) => m.status === 'personal').length;
@@ -349,7 +449,7 @@ function TeamTodayCard() {
       <div className="bg-ofa-bg border border-neutral-800 rounded-lg p-6">
         <h2 className="text-base font-semibold text-white mb-4">Team Vandaag</h2>
         <p className="text-gray-400 text-sm text-center py-4">
-          Niemand ingeklokt of met verlof
+          Niemand ingeroosterd vandaag
         </p>
       </div>
     );
@@ -367,6 +467,13 @@ function TeamTodayCard() {
           <p className="text-xs text-green-200">Ingeklokt</p>
           <p className="text-2xl font-bold text-green-400">{present}</p>
         </div>
+
+        {notClocked > 0 && (
+          <div className="bg-red-900/30 border border-red-500 rounded-lg p-3">
+            <p className="text-xs text-red-200">Niet ingeklokt</p>
+            <p className="text-2xl font-bold text-red-400">{notClocked}</p>
+          </div>
+        )}
 
         {totalOnLeave > 0 && (
           <div className="bg-blue-900/30 border border-blue-500 rounded-lg p-3">
@@ -397,9 +504,21 @@ function TeamTodayCard() {
                     <CheckCircle className="w-3 h-3" /> Ingeklokt
                   </span>
                   {member.clock_in && (
-                    <p className="text-xs text-gray-400">{member.clock_in}</p>
+                    <p className="text-xs text-gray-400 font-mono">
+                      {member.clock_in}{member.clock_out ? ` – ${member.clock_out}` : ''}
+                    </p>
+                  )}
+                  {member.work_from_home && (
+                    <p className="text-xs text-purple-400 flex items-center gap-1 justify-end mt-0.5">
+                      <HomeIcon className="w-3 h-3" /> Thuis
+                    </p>
                   )}
                 </div>
+              )}
+              {member.status === 'not_clocked' && (
+                <span className="text-red-400 text-xs flex items-center gap-1 justify-end">
+                  <XCircle className="w-3 h-3" /> Niet ingeklokt
+                </span>
               )}
               {member.status === 'sick' && (
                 <span className="text-blue-400 text-xs flex items-center gap-1 justify-end">

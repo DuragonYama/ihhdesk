@@ -41,8 +41,12 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
             detail="Account is inactive"
         )
 
+    if user.force_logout:
+        user.force_logout = False
+        db.commit()
+
     access_token = create_access_token(data={"sub": str(user.id)})
-    
+
     return {
         "access_token": access_token,
         "token_type": "bearer",
