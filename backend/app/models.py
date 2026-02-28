@@ -159,10 +159,37 @@ class CompanyHoliday(Base):
 
 class PasswordResetToken(Base):
     __tablename__ = "password_reset_tokens"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     token = Column(String, unique=True, nullable=False, index=True)
     expires_at = Column(DateTime, nullable=False)
     used = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PushSubscription(Base):
+    """Stores Web Push subscriptions per user (one per browser/device)."""
+    __tablename__ = "push_subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    endpoint = Column(String, nullable=False, unique=True)
+    p256dh = Column(String, nullable=False)   # browser public key
+    auth = Column(String, nullable=False)      # auth secret
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", backref="push_subscriptions")
+
+
+class DailyReminderConfig(Base):
+    """Single-row config for the automated daily clock-in reminder."""
+    __tablename__ = "daily_reminder_config"
+
+    id = Column(Integer, primary_key=True, index=True)
+    is_enabled = Column(Boolean, default=False)
+    send_time = Column(String, nullable=False, default="07:30")  # "HH:MM" in 24h
+    title = Column(String, nullable=False, default="Vergeet niet in te klokken!")
+    message = Column(Text, nullable=False, default="Goedemorgen! Vergeet niet in te klokken vandaag.")
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_by = Column(Integer, ForeignKey("users.id"), nullable=True)

@@ -1,6 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, CheckSquare, BarChart3, Calendar, Clock, FileText, Mail, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, CheckSquare, BarChart3, Calendar, Clock, FileText, Mail, Bell, Menu, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface LayoutProps {
@@ -39,6 +39,7 @@ export default function Layout({ children }: LayoutProps) {
     { name: 'Uurregistratie', path: '/timesheet', icon: Clock },
     { name: 'Verlofbeheer', path: '/absences', icon: FileText },
     { name: 'Email', path: '/email', icon: Mail },
+    { name: 'Meldingen', path: '/notifications', icon: Bell },
   ];
 
   return (

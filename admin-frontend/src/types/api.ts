@@ -248,3 +248,24 @@ export interface BulkEmailResponse {
   failed_emails: string[];
   success: boolean;
 }
+
+export interface BatchPushRequest {
+  employee_ids: number[];
+  title: string;
+  message: string;
+}
+
+export interface BatchPushResponse {
+  total_recipients: number;
+  successful_count: number;
+  failed_endpoints: string[];
+  success: boolean;
+}
+
+export interface DailyReminderConfig {
+  is_enabled: boolean;
+  send_time: string; // "HH:MM"
+  title: string;
+  message: string;
+  updated_at?: string;
+}

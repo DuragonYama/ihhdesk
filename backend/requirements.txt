@@ -11,3 +11,5 @@ pydantic-settings==2.12.0
 aiosmtplib==5.1.0
 sendgrid==6.12.5
 holidays==0.39
+apscheduler==3.10.4
+pywebpush==2.0.0

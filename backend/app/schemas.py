@@ -214,3 +214,41 @@ class BulkEmailResponse(BaseModel):
     successful_count: int
     failed_emails: List[str]
     success: bool
+
+
+# Push Notification Schemas
+class PushSubscriptionCreate(BaseModel):
+    endpoint: str
+    p256dh: str
+    auth: str
+
+
+class BatchPushRequest(BaseModel):
+    employee_ids: List[int]
+    title: str
+    message: str
+
+
+class BatchPushResponse(BaseModel):
+    total_recipients: int
+    successful_count: int
+    failed_endpoints: List[str]
+    success: bool
+
+
+class DailyReminderConfigRequest(BaseModel):
+    is_enabled: bool
+    send_time: str  # "HH:MM"
+    title: str
+    message: str
+
+
+class DailyReminderConfigResponse(BaseModel):
+    is_enabled: bool
+    send_time: str
+    title: str
+    message: str
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

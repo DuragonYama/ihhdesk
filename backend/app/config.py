@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     EMPLOYEE_FRONTEND_URL: str = "http://localhost:5173"
     ADMIN_FRONTEND_URL: str = "http://localhost:5174"
 
+    # VAPID keys for Web Push notifications (generate once, store in .env)
+    VAPID_PRIVATE_KEY: str = ""
+    VAPID_PUBLIC_KEY: str = ""
+    VAPID_SUBJECT: str = "mailto:admin@example.com"
+
     # Legacy - kept for backward compatibility
     FRONTEND_URL: str = "http://localhost:3000"
 

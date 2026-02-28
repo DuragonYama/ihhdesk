@@ -13,6 +13,7 @@ import Calendar from './pages/Calendar';
 import Timesheet from './pages/Timesheet';
 import Email from './pages/Email';
 import AbsenceManagement from './pages/AbsenceManagement';
+import Notifications from './pages/Notifications';
 
 const queryClient = new QueryClient();
 
@@ -101,6 +102,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <AbsenceManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <Notifications />
           </ProtectedRoute>
         }
       />
