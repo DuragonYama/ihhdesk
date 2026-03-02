@@ -269,3 +269,26 @@ export interface DailyReminderConfig {
   message: string;
   updated_at?: string;
 }
+
+export interface ScheduledNotification {
+  id: number;
+  title: string;
+  message: string;
+  send_time: string; // "HH:MM"
+  days_of_week: number[]; // JS-style: 0=Sun, 1=Mon, …, 6=Sat
+  is_active: boolean;
+  target_type: 'all_scheduled' | 'specific_users';
+  target_employee_ids: number[] | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface ScheduledNotificationCreate {
+  title: string;
+  message: string;
+  send_time: string;
+  days_of_week: number[];
+  is_active: boolean;
+  target_type: 'all_scheduled' | 'specific_users';
+  target_employee_ids?: number[] | null;
+}

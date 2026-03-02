@@ -6,7 +6,7 @@ Employee management system with two frontends (Admin and Employee) and a FastAPI
 ## Tech Stack
 ### Backend
 - **Framework:** FastAPI
-- **Database:** PostgreSQL + SQLAlchemy ORM
+- **Database:** SQLite + SQLAlchemy ORM
 - **Migrations:** Alembic (`alembic/`)
 - **Key Dependencies:** apscheduler (for cron tasks), aiosmtplib (email), Passlib + JWT (Auth)
 - **Structure:**
@@ -24,7 +24,7 @@ Employee management system with two frontends (Admin and Employee) and a FastAPI
 - **Routing:** React Router DOM V7
 - **UI Icons:** Lucide-React
 - **Key Structure:**
-  - `pages/`: AbsenceManagement, Approvals, Calendar, Dashboard, Email, Notifications, Reports, Timesheet, Users, etc.
+  - `pages/`: AbsenceManagement, Approvals, Calendar, Dashboard, Email, ForgotPassword, Login, Notifications, Reports, ResetPassword, Timesheet, Users, etc.
   - `components/`: Modals (Approval, BulkAbsence, EditAbsence, EditCalendarEvent, EditClockEvent) and Layout.
   - `contexts/`: AuthContext.
 
@@ -35,7 +35,7 @@ Employee management system with two frontends (Admin and Employee) and a FastAPI
 - **Routing:** React Router DOM V7
 - **UI Icons:** Lucide-React
 - **Key Structure:**
-  - `pages/`: Absences, Balance, Calendar, Clock, Home, Profile, RequestAbsence, SuggestEvent, etc.
+  - `pages/`: Absences, Balance, Calendar, Clock, ForgotPassword, Home, Login, Profile, RequestAbsence, ResetPassword, SuggestEvent, etc.
   - `components/`: Layout, LoadingSpinner, ProtectedRoute.
   - `store/`: authStore.ts.
   - `contexts/`: AuthContext.

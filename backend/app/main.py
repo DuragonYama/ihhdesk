@@ -4,22 +4,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routes import auth, users, clock, absences, calendar, reports, exports, email, employees
 from app.routes import notifications
 from app.config import settings
-from app.scheduler import scheduler, schedule_reminder
+from app.scheduler import scheduler, sync_all_notifications
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: load reminder config and start scheduler
-    from app.database import get_db
-    from app.models import DailyReminderConfig
-    db = next(get_db())
-    try:
-        config = db.query(DailyReminderConfig).first()
-        send_time = config.send_time if config else "07:30"
-        schedule_reminder(scheduler, send_time)
-        scheduler.start()
-    finally:
-        db.close()
+    # Startup: sync all active scheduled notifications, then start scheduler
+    sync_all_notifications(scheduler)
+    scheduler.start()
     yield
     # Shutdown
     scheduler.shutdown()

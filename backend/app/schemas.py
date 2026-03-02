@@ -252,3 +252,29 @@ class DailyReminderConfigResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ScheduledNotificationCreate(BaseModel):
+    title: str
+    message: str
+    send_time: str  # "HH:MM"
+    days_of_week: List[int]  # JS-style: 0=Sun, 1=Mon, …, 6=Sat
+    is_active: bool = True
+    target_type: str = "all_scheduled"  # 'all_scheduled' or 'specific_users'
+    target_employee_ids: Optional[List[int]] = None
+
+
+class ScheduledNotificationResponse(BaseModel):
+    id: int
+    title: str
+    message: str
+    send_time: str
+    days_of_week: List[int]
+    is_active: bool
+    target_type: str
+    target_employee_ids: Optional[List[int]] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, DateTime, Date, Time, Text, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, DateTime, Date, Time, Text, ForeignKey, UniqueConstraint, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -193,3 +193,20 @@ class DailyReminderConfig(Base):
     message = Column(Text, nullable=False, default="Goedemorgen! Vergeet niet in te klokken vandaag.")
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     updated_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+
+class ScheduledNotification(Base):
+    """Multiple configurable scheduled push notification profiles."""
+    __tablename__ = "scheduled_notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    send_time = Column(String, nullable=False, default="07:30")  # "HH:MM" in 24h
+    days_of_week = Column(JSON, nullable=False, default=lambda: [1, 2, 3, 4, 5])  # JS-style: 0=Sun, 1=Mon, …, 6=Sat
+    is_active = Column(Boolean, nullable=False, default=True)
+    target_type = Column(String, nullable=False, default="all_scheduled")  # 'all_scheduled' or 'specific_users'
+    target_employee_ids = Column(JSON, nullable=True)  # List of user IDs, only used when target_type='specific_users'
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
