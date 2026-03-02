@@ -1,4 +1,7 @@
+from pathlib import Path
 from pydantic_settings import BaseSettings
+
+_env_path = str(Path(__file__).parent.parent / ".env")
 
 class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./data/employees.db"
@@ -24,6 +27,6 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:3000"
 
     class Config:
-        env_file = ".env"
+        env_file = _env_path
 
 settings = Settings()

@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, date as date_type, time, timedelta
 from app.database import get_db
-from app.models import User, ClockEvent, Absence, WorkSchedule
+from app.models import User, ClockEvent, Absence, WorkSchedule, PushSubscription
+from app.utils.push import send_push
 from app.schemas import ClockInRequest, ClockEventResponse, ClockEventUpdate, CreateClockEventRequest
 from app.dependencies import get_current_user, get_current_admin
 
@@ -513,6 +514,21 @@ HR Team"""
         except Exception as e:
             print(f"Failed to send approval email: {e}")
 
+    # Send push notification
+    if user:
+        try:
+            subscriptions = db.query(PushSubscription).filter(PushSubscription.user_id == user.id).all()
+            for sub in subscriptions:
+                await send_push(
+                    endpoint=sub.endpoint,
+                    p256dh=sub.p256dh,
+                    auth=sub.auth,
+                    title="Uurregistratie Goedgekeurd",
+                    body=f"Je uurregistratie voor {event.date.strftime('%d-%m-%Y')} is goedgekeurd."
+                )
+        except Exception as e:
+            print(f"Failed to send push notification: {e}")
+
     return clock_event_to_dict(event)
 
 @router.delete("/{event_id}")
@@ -580,6 +596,20 @@ HR Team"""
             )
         except Exception as e:
             print(f"Failed to send rejection email: {e}")
+
+        # Send push notification for rejection
+        try:
+            subscriptions = db.query(PushSubscription).filter(PushSubscription.user_id == user.id).all()
+            for sub in subscriptions:
+                await send_push(
+                    endpoint=sub.endpoint,
+                    p256dh=sub.p256dh,
+                    auth=sub.auth,
+                    title="Uurregistratie Afgewezen",
+                    body=f"Je uurregistratie voor {event_date} is afgewezen."
+                )
+        except Exception as e:
+            print(f"Failed to send push notification: {e}")
 
     return {"message": "Clock event deleted"}
 @router.patch("/{event_id}/edit")

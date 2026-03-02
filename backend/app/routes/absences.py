@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timedelta, date as date_type
 from app.database import get_db
-from app.models import User, Absence, ClockEvent
+from app.models import User, Absence, ClockEvent, PushSubscription
 from app.schemas import (
     AbsenceRequest,
     AbsenceResponse,
@@ -13,6 +13,7 @@ from app.schemas import (
 )
 from app.dependencies import get_current_user, get_current_admin
 from app.utils.email import send_email
+from app.utils.push import send_push
 
 router = APIRouter()
 
@@ -371,6 +372,20 @@ HR Team"""
         body=email_body
     )
 
+    # Send push notification
+    try:
+        subscriptions = db.query(PushSubscription).filter(PushSubscription.user_id == user.id).all()
+        for sub in subscriptions:
+            await send_push(
+                endpoint=sub.endpoint,
+                p256dh=sub.p256dh,
+                auth=sub.auth,
+                title="Verlofaanvraag Goedgekeurd",
+                body=f"Je {type_nl} aanvraag voor {date_range} is goedgekeurd."
+            )
+    except Exception as e:
+        print(f"Failed to send push notification: {e}")
+
     return absence
 
 @router.patch("/{absence_id}/reject", response_model=AbsenceResponse)
@@ -444,7 +459,21 @@ HR Team
         subject=f"Verlofaanvraag Afgewezen - {type_nl.title()}",
         body=email_body
     )
-    
+
+    # Send push notification
+    try:
+        subscriptions = db.query(PushSubscription).filter(PushSubscription.user_id == user.id).all()
+        for sub in subscriptions:
+            await send_push(
+                endpoint=sub.endpoint,
+                p256dh=sub.p256dh,
+                auth=sub.auth,
+                title="Verlofaanvraag Afgewezen",
+                body=f"Je {type_nl} aanvraag voor {start_date_nl} is afgewezen."
+            )
+    except Exception as e:
+        print(f"Failed to send push notification: {e}")
+
     return absence
 
 @router.patch("/{absence_id}", response_model=AbsenceResponse)
