@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from typing import List, Optional
 from datetime import datetime, date as date_type, time, timedelta
 from app.database import get_db
@@ -157,10 +158,10 @@ async def clock_in(
                 detail=f"Employees can only clock in for current week ({week_start} to {week_end})"
             )
 
-    # AUTO-CLOSE OPEN ABSENCES
+    # AUTO-CLOSE OPEN ABSENCES (also catches absences with a manually set end_date >= clock_date)
     open_absence = db.query(Absence).filter(
         Absence.user_id == current_user.id,
-        Absence.end_date == None,
+        or_(Absence.end_date == None, Absence.end_date >= clock_date),
         Absence.status == 'approved'
     ).first()
 

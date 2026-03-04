@@ -764,8 +764,11 @@ function EditAbsenceModal({
 }) {
   const [formData, setFormData] = useState<UpdateAbsenceRequest>({
     start_date: absence.start_date,
+    end_date: absence.end_date || '',
     reason: absence.reason,
   });
+  const isSickLeave = absence.type === 'sick';
+  const [isEndDateTouched, setIsEndDateTouched] = useState(false);
 
   const updateMutation = useMutation({
     mutationFn: async (data: UpdateAbsenceRequest) => {
@@ -812,6 +815,39 @@ function EditAbsenceModal({
               onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
               className="w-full px-4 py-2 bg-ofa-bg-dark border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-ofa-red"
             />
+          </div>
+
+          {/* End Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Einddatum
+            </label>
+            <input
+              type="date"
+              value={formData.end_date || ''}
+              onChange={(e) => {
+                setFormData({ ...formData, end_date: e.target.value || null });
+                setIsEndDateTouched(true);
+              }}
+              onFocus={() => setIsEndDateTouched(true)}
+              className="w-full px-4 py-2 bg-ofa-bg-dark border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-ofa-red"
+            />
+            {formData.end_date && (
+              <button
+                type="button"
+                onClick={() => { setFormData({ ...formData, end_date: null }); setIsEndDateTouched(true); }}
+                className="mt-1 text-xs text-gray-400 hover:text-white"
+              >
+                Wissen
+              </button>
+            )}
+            {isSickLeave && isEndDateTouched && formData.end_date !== absence.end_date && (
+              <div className="mt-2 p-3 bg-yellow-900/20 border border-yellow-700 rounded-lg">
+                <p className="text-yellow-400 text-sm">
+                  ⚠️ Let op: als je een einddatum instelt voor ziekteverlof, wordt de medewerker na deze datum niet meer als ziek gezien. Als ze daarna opnieuw ziek zijn, wordt er opnieuw -8 uur afgetrokken.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Reason */}

@@ -64,6 +64,7 @@ export interface ApproveRejectRequest {
 
 export interface UpdateAbsenceRequest {
   start_date?: string;
+  end_date?: string | null;
   reason?: string;
 }
 

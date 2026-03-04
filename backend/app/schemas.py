@@ -121,6 +121,7 @@ class RejectAbsenceRequest(BaseModel):  # ADDED
 
 class UpdateAbsenceRequest(BaseModel):
     start_date: Optional[date] = None
+    end_date: Optional[date] = None
     reason: Optional[str] = None
 
 class AdminCreateAbsenceRequest(BaseModel):

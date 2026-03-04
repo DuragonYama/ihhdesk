@@ -489,11 +489,15 @@ async def update_absence(
     if not absence:
         raise HTTPException(status_code=404, detail="Absence not found")
 
-    # Update fields if provided
-    if request.start_date is not None:
-        absence.start_date = request.start_date
-    if request.reason is not None:
-        absence.reason = request.reason
+    # Update fields if provided (exclude_unset=True distinguishes "not provided" from "set to null")
+    updates = request.model_dump(exclude_unset=True)
+
+    if "start_date" in updates:
+        absence.start_date = updates["start_date"]
+    if "end_date" in updates:
+        absence.end_date = updates["end_date"]
+    if "reason" in updates:
+        absence.reason = updates["reason"]
 
     db.commit()
     db.refresh(absence)
