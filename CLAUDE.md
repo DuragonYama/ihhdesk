@@ -17,6 +17,9 @@ Employee management system with two frontends (Admin and Employee) and a FastAPI
   - `app/scheduler.py`: Background tasks via APScheduler.
   - `app/utils/`: calculations.py, csv_export.py, email.py, push.py.
 
+### Skills Directory
+- `skills/`: Directory containing agent skills for performing codebase research, task planning, and various audits.
+
 ### Frontend (Admin)
 - **Framework:** React 19 + Vite + TypeScript
 - **Styling:** Tailwind CSS + PostCSS + Autoprefixer
@@ -27,6 +30,8 @@ Employee management system with two frontends (Admin and Employee) and a FastAPI
   - `pages/`: AbsenceManagement, Approvals, Calendar, Dashboard, Email, ForgotPassword, Login, Notifications, Reports, ResetPassword, Timesheet, Users, etc.
   - `components/`: Modals (Approval, BulkAbsence, EditAbsence, EditCalendarEvent, EditClockEvent) and Layout.
   - `contexts/`: AuthContext.
+  - `types/`: API types (e.g., api.ts).
+  - `utils/`: Utilities like API config (api.ts).
 
 ### Frontend (Employee)
 - **Framework:** React 19 + Vite + TypeScript
@@ -39,6 +44,8 @@ Employee management system with two frontends (Admin and Employee) and a FastAPI
   - `components/`: Layout, LoadingSpinner, ProtectedRoute.
   - `store/`: authStore.ts.
   - `contexts/`: AuthContext.
+  - `types/`: API types (e.g., api.ts).
+  - `utils/`: Utilities like API config (api.ts).
 
 ## Core Features
 1. **Clock System:** Tracks clock-in/out events.
