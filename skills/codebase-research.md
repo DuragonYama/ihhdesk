@@ -6,7 +6,7 @@ TASK-[feature-name].md in the project root.
 Do NOT implement anything. Only research and plan.
 
 ## Steps:
-1. Read CLAUDE.md fully to understand project conventions
+1. Read CLAUDE.md fully to understand project conventions and data flows
 2. Find all files relevant to the task
 3. For each change needed, provide:
    - Exact file path
@@ -18,7 +18,8 @@ Do NOT implement anything. Only research and plan.
 5. Note existing patterns to follow (how other similar things are done)
 6. Note any DB migrations needed
 7. Note any new dependencies needed
-8. Save output as TASK-[feature-name].md in project root
+8. Append an Acceptance Criteria section (invoke acceptance-criteria)
+9. Save output as TASK-[feature-name].md in project root
 
 ## Rules:
 - Reference exact line numbers where possible
@@ -26,7 +27,9 @@ Do NOT implement anything. Only research and plan.
 - Follow existing code conventions found in the codebase
 - Keep the plan minimal — smallest change that achieves the goal
 - Flag any risks or breaking changes
+- Acceptance criteria must be specific to this task — no generic placeholders
 
 ## Usage:
 Replace [feature-name] with the feature being planned.
 Describe the feature after invoking this skill.
+Always invoke acceptance-criteria at the end.

@@ -94,9 +94,16 @@ async def get_today_status(
 ):
     """Get today's employee status overview (admin only)"""
     
-    from app.models import ClockEvent, Absence, WorkSchedule
+    from app.models import ClockEvent, Absence, WorkSchedule, CompanyHoliday
     
     today = datetime.now().date()
+    
+    # Check if today is a company holiday
+    holiday_record = db.query(CompanyHoliday).filter(
+        CompanyHoliday.date == today
+    ).first()
+    is_holiday = holiday_record is not None
+    holiday_name = holiday_record.name if holiday_record else None
     
     # Get all active employees
     employees = db.query(User).filter(
@@ -140,6 +147,7 @@ async def get_today_status(
     clocked_in = []
     on_leave = []
     expected_missing = []
+    on_holiday = []
 
     today_weekday = today.weekday()  # Python: 0=Monday
 
@@ -183,11 +191,18 @@ async def get_today_status(
         print(f"[CONVERSION] User {employee.username}: JS days: {js_scheduled_days} → Python days: {py_scheduled_days}, Today Python weekday: {today_weekday}")
 
         if today_weekday in py_scheduled_days:
-            expected_missing.append({
-                'user_id': user_id,
-                'username': employee.username,
-                'email': employee.email
-            })
+            if is_holiday:
+                on_holiday.append({
+                    'user_id': user_id,
+                    'username': employee.username,
+                    'email': employee.email
+                })
+            else:
+                expected_missing.append({
+                    'user_id': user_id,
+                    'username': employee.username,
+                    'email': employee.email
+                })
     
     return {
         'date': str(today),
@@ -195,9 +210,13 @@ async def get_today_status(
             'total_employees': len(employees),
             'clocked_in': len(clocked_in),
             'on_leave': len(on_leave),
-            'expected_missing': len(expected_missing)
+            'expected_missing': len(expected_missing),
+            'on_holiday': len(on_holiday)
         },
         'clocked_in': clocked_in,
         'on_leave': on_leave,
-        'expected_missing': expected_missing
+        'expected_missing': expected_missing,
+        'on_holiday': on_holiday,
+        'is_holiday': is_holiday,
+        'holiday_name': holiday_name
     }

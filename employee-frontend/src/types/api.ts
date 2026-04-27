@@ -157,6 +157,6 @@ export interface TeamStatus {
   date: string;
   team: Array<{
     username: string;
-    status: 'present' | 'absent' | 'sick' | 'vacation' | 'personal';
+    status: 'present' | 'absent' | 'sick' | 'vacation' | 'personal' | 'company_holiday' | 'not_clocked';
   }>;
 }

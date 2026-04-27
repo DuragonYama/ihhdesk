@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, date
 from typing import List
 from app.database import get_db
-from app.models import User, WorkSchedule, ClockEvent, Absence
+from app.models import User, WorkSchedule, ClockEvent, Absence, CompanyHoliday
 from app.dependencies import get_current_user
 
 router = APIRouter()
@@ -29,6 +29,13 @@ async def get_team_today(
     print(f"[TEAM-TODAY] Found {len(all_users)} active employees")
 
     team = []
+
+    # Check if today is a company holiday
+    holiday_record = db.query(CompanyHoliday).filter(
+        CompanyHoliday.date == today
+    ).first()
+    is_holiday = holiday_record is not None
+    holiday_name = holiday_record.name if holiday_record else None
 
     for user in all_users:
         # Check if clocked in today
@@ -74,10 +81,15 @@ async def get_team_today(
             if not schedule_today:
                 print(f"[TEAM-TODAY] {user.username} not scheduled today (skipping)")
                 continue
-            # Scheduled but not clocked in
-            status = 'not_clocked'
-            extra_info = {}
-            print(f"[TEAM-TODAY] {user.username} is SCHEDULED but not clocked in")
+            # Scheduled but not clocked in - check if it's a holiday
+            if is_holiday:
+                status = 'company_holiday'
+                extra_info = {}
+                print(f"[TEAM-TODAY] {user.username} is on COMPANY HOLIDAY (scheduled but holiday)")
+            else:
+                status = 'not_clocked'
+                extra_info = {}
+                print(f"[TEAM-TODAY] {user.username} is SCHEDULED but not clocked in")
 
         team.append({
             'id': user.id,
@@ -91,5 +103,7 @@ async def get_team_today(
 
     return {
         'date': str(today),
-        'team': team
+        'team': team,
+        'is_holiday': is_holiday,
+        'holiday_name': holiday_name
     }

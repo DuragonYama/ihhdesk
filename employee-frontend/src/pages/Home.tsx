@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Activity, Palmtree, FileText, Clock as ClockIcon, CheckCircle, XCircle, Euro, MapPin, Car, Home as HomeIcon } from 'lucide-react';
+import { Activity, Palmtree, FileText, Clock as ClockIcon, CheckCircle, XCircle, Euro, MapPin, Car, Home as HomeIcon, Sparkles } from 'lucide-react';
 import { api } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
-import type { MyBalance, Absence, TeamStatus } from '../types/api';
+import type { MyBalance, Absence, TeamStatus, CompanyHoliday } from '../types/api';
 
 // Helper functions
 function formatDateNL(date: Date): string {
@@ -13,13 +13,13 @@ function formatDateNL(date: Date): string {
 }
 
 function calculateHours(clockIn: string | null | undefined, clockOut?: string | null): number {
-  if (!clockIn) return 0; // No clock in = 0 hours
+  if (!clockIn) return 0;
 
   const start = new Date(`2000-01-01T${clockIn}`);
   const end = clockOut ? new Date(`2000-01-01T${clockOut}`) : new Date();
   const diff = end.getTime() - start.getTime();
   const hours = diff / 1000 / 60 / 60;
-  return Math.max(0, hours); // Return raw hours, formatting will handle display
+  return Math.max(0, hours);
 }
 
 function formatHoursMinutes(hours: number): string {
@@ -52,26 +52,21 @@ function ClockStatusCard() {
   const [showClockInOptions, setShowClockInOptions] = useState(false);
   const [clockInOptions, setClockInOptions] = useState({ came_by_car: false, work_from_home: false, parking_cost: '', km_driven: '' });
 
-  // Check if today is a scheduled work day
   const today = new Date().getDay();
   const isScheduledToday = user?.work_days?.includes(today) || false;
+  const todayStr = new Date().toISOString().split('T')[0];
 
-  // ALL HOOKS MUST BE DECLARED FIRST - UNCONDITIONALLY
-
-  // Check for absence today
   const { data: todayAbsence } = useQuery({
     queryKey: ['my-absences', 'today'],
     queryFn: async () => {
       try {
-        const today = new Date().toISOString().split('T')[0];
         const response = await api.get('/api/absences/my-absences');
         const absences = response.data;
 
-        // Find absence covering today
         const absence = absences.find((a: Absence) => {
           const start = new Date(a.start_date);
           const end = a.end_date ? new Date(a.end_date) : new Date('2099-12-31');
-          const todayDate = new Date(today);
+          const todayDate = new Date(todayStr);
           return a.status === 'approved' && todayDate >= start && todayDate <= end;
         });
 
@@ -83,7 +78,6 @@ function ClockStatusCard() {
     },
   });
 
-  // Check for clock event today
   const { data: todayEvent, isLoading, error } = useQuery({
     queryKey: ['clock', 'today'],
     queryFn: async () => {
@@ -99,7 +93,17 @@ function ClockStatusCard() {
     },
   });
 
-  // Clock in mutation
+  const { data: holidays = [] } = useQuery<CompanyHoliday[]>({
+    queryKey: ['calendar', 'holidays'],
+    queryFn: async () => {
+      const response = await api.get('/api/calendar/holidays');
+      return response.data;
+    },
+  });
+
+  const isHolidayToday = holidays.some(h => h.date === todayStr);
+  const holidayToday = holidays.find(h => h.date === todayStr);
+
   const clockInMutation = useMutation({
     mutationFn: async (options: { came_by_car: boolean; work_from_home: boolean; parking_cost: string; km_driven: string }) => {
       const response = await api.post('/api/clock/in', {
@@ -116,9 +120,6 @@ function ClockStatusCard() {
     },
   });
 
-  // ALL HOOKS DECLARED ✅ - NOW CONDITIONAL RETURNS ARE OK
-
-  // If on sick leave or vacation
   if (todayAbsence) {
     const getAbsenceIcon = () => {
       if (todayAbsence.type === 'sick') return <Activity className="w-12 h-12 text-blue-400" />;
@@ -157,10 +158,8 @@ function ClockStatusCard() {
     );
   }
 
-  // No clock event today
   if (!todayEvent) {
-    if (!isScheduledToday) {
-      // Not scheduled - show info
+    if (!isScheduledToday && !isHolidayToday) {
       return (
         <div className="bg-ofa-bg border border-neutral-800 rounded-lg p-6">
           <p className="text-gray-400 text-center">Geen werkdag vandaag</p>
@@ -168,107 +167,121 @@ function ClockStatusCard() {
       );
     }
 
-    // Scheduled but not clocked in - show BIG clock in button
+    const showClockIn = isScheduledToday || isHolidayToday;
+
     return (
       <div className="bg-ofa-bg border border-neutral-800 rounded-lg p-6">
-        <button
-          onClick={() => setShowClockInOptions(true)}
-          disabled={clockInMutation.isPending}
-          className="w-full h-20 bg-green-600 hover:bg-green-700 disabled:bg-neutral-700 text-white text-xl font-bold rounded-lg transition"
-        >
-          {clockInMutation.isPending ? 'Inklokken...' : 'Inklokken'}
-        </button>
-
-        {showClockInOptions && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-ofa-bg border border-neutral-800 rounded-lg p-6 max-w-sm w-full">
-              <h3 className="text-xl font-bold text-white mb-4">Inklokken</h3>
-
-              <div className="space-y-3 mb-6">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={clockInOptions.came_by_car}
-                    onChange={(e) => setClockInOptions({
-                      ...clockInOptions,
-                      came_by_car: e.target.checked,
-                      work_from_home: e.target.checked ? false : clockInOptions.work_from_home,
-                      parking_cost: '',
-                      km_driven: '',
-                    })}
-                    className="w-5 h-5"
-                  />
-                  <span className="text-white flex items-center gap-2"><Car className="w-4 h-4" /> Met auto gekomen</span>
-                </label>
-
-                {clockInOptions.came_by_car && (
-                  <div className="ml-8 space-y-3">
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-1">Parkeerkosten (€)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={clockInOptions.parking_cost}
-                        onChange={(e) => setClockInOptions({ ...clockInOptions, parking_cost: e.target.value })}
-                        placeholder="0.00"
-                        className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white focus:border-ofa-red focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-1">Kilometers gereden</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={clockInOptions.km_driven}
-                        onChange={(e) => setClockInOptions({ ...clockInOptions, km_driven: e.target.value })}
-                        placeholder="0.0"
-                        className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white focus:border-ofa-red focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={clockInOptions.work_from_home}
-                    onChange={(e) => setClockInOptions({
-                      ...clockInOptions,
-                      work_from_home: e.target.checked,
-                      came_by_car: e.target.checked ? false : clockInOptions.came_by_car,
-                    })}
-                    className="w-5 h-5"
-                  />
-                  <span className="text-white flex items-center gap-2"><HomeIcon className="w-4 h-4" /> Thuiswerken</span>
-                </label>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => { setShowClockInOptions(false); setClockInOptions({ came_by_car: false, work_from_home: false, parking_cost: '', km_driven: '' }); }}
-                  className="flex-1 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg transition"
-                >
-                  Annuleren
-                </button>
-                <button
-                  onClick={() => {
-                    clockInMutation.mutate(clockInOptions);
-                    setShowClockInOptions(false);
-                    setClockInOptions({ came_by_car: false, work_from_home: false, parking_cost: '', km_driven: '' });
-                  }}
-                  className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
-                >
-                  Inklokken
-                </button>
-              </div>
-            </div>
+        {isHolidayToday && (
+          <div className="flex items-center gap-2 mb-3 text-emerald-400">
+            <Sparkles className="w-5 h-5" />
+            <span className="text-sm font-medium">Feestdag: {holidayToday?.name}</span>
           </div>
+        )}
+        {showClockIn ? (
+          <>
+            <button
+              onClick={() => setShowClockInOptions(true)}
+              disabled={clockInMutation.isPending}
+              className="w-full h-20 bg-green-600 hover:bg-green-700 disabled:bg-neutral-700 text-white text-xl font-bold rounded-lg transition"
+            >
+              {clockInMutation.isPending ? 'Inklokken...' : 'Inklokken'}
+            </button>
+
+            {showClockInOptions && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                <div className="bg-ofa-bg border border-neutral-800 rounded-lg p-6 max-w-sm w-full">
+                  <h3 className="text-xl font-bold text-white mb-4">
+                    Inklokken{isHolidayToday ? ` (${holidayToday?.name})` : ''}
+                  </h3>
+
+                  <div className="space-y-3 mb-6">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={clockInOptions.came_by_car}
+                        onChange={(e) => setClockInOptions({
+                          ...clockInOptions,
+                          came_by_car: e.target.checked,
+                          work_from_home: e.target.checked ? false : clockInOptions.work_from_home,
+                          parking_cost: '',
+                          km_driven: '',
+                        })}
+                        className="w-5 h-5"
+                      />
+                      <span className="text-white flex items-center gap-2"><Car className="w-4 h-4" /> Met auto gekomen</span>
+                    </label>
+
+                    {clockInOptions.came_by_car && (
+                      <div className="ml-8 space-y-3">
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Parkeerkosten (€)</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={clockInOptions.parking_cost}
+                            onChange={(e) => setClockInOptions({ ...clockInOptions, parking_cost: e.target.value })}
+                            placeholder="0.00"
+                            className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white focus:border-ofa-red focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Kilometers gereden</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={clockInOptions.km_driven}
+                            onChange={(e) => setClockInOptions({ ...clockInOptions, km_driven: e.target.value })}
+                            placeholder="0.0"
+                            className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white focus:border-ofa-red focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={clockInOptions.work_from_home}
+                        onChange={(e) => setClockInOptions({
+                          ...clockInOptions,
+                          work_from_home: e.target.checked,
+                          came_by_car: e.target.checked ? false : clockInOptions.came_by_car,
+                        })}
+                        className="w-5 h-5"
+                      />
+                      <span className="text-white flex items-center gap-2"><HomeIcon className="w-4 h-4" /> Thuiswerken</span>
+                    </label>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => { setShowClockInOptions(false); setClockInOptions({ came_by_car: false, work_from_home: false, parking_cost: '', km_driven: '' }); }}
+                      className="flex-1 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg transition"
+                    >
+                      Annuleren
+                    </button>
+                    <button
+                      onClick={() => {
+                        clockInMutation.mutate(clockInOptions);
+                        setShowClockInOptions(false);
+                        setClockInOptions({ came_by_car: false, work_from_home: false, parking_cost: '', km_driven: '' });
+                      }}
+                      className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
+                    >
+                      Inklokken
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="text-gray-400 text-center">Geen werkdag vandaag</p>
         )}
       </div>
     );
   }
 
-  // Has clock event - show status
   if (todayEvent.status === 'pending') {
     return (
       <div className="bg-ofa-bg border border-neutral-800 rounded-lg p-6">
@@ -290,15 +303,26 @@ function ClockStatusCard() {
     );
   }
 
-  // Approved clock event
   const hours = calculateHours(todayEvent.clock_in, todayEvent.clock_out);
 
   return (
     <div className="bg-ofa-bg border border-neutral-800 rounded-lg p-6">
       <div className="flex items-center gap-2 mb-4">
-        <CheckCircle className="w-6 h-6 text-green-400" />
-        <h2 className="text-lg font-semibold text-white">Ingeklokt</h2>
+        {isHolidayToday ? (
+          <Sparkles className="w-6 h-6 text-emerald-400" />
+        ) : (
+          <CheckCircle className="w-6 h-6 text-green-400" />
+        )}
+        <h2 className="text-lg font-semibold text-white">
+          {isHolidayToday ? 'Feestdag - Extra uren' : 'Ingeklokt'}
+        </h2>
       </div>
+
+      {isHolidayToday && (
+        <div className="mb-3 text-sm text-emerald-400">
+          {holidayToday?.name}
+        </div>
+      )}
 
       <div className="space-y-2 mb-4">
         <div className="flex justify-between text-sm">
@@ -311,10 +335,15 @@ function ClockStatusCard() {
         </div>
         <div className="flex justify-between">
           <span className="text-gray-400">Gewerkt</span>
-          <span className="text-2xl font-bold text-green-400">
+          <span className={`text-2xl font-bold ${isHolidayToday ? 'text-emerald-400' : 'text-green-400'}`}>
             {formatHoursMinutes(hours)}
           </span>
         </div>
+        {isHolidayToday && (
+          <div className="flex items-center gap-2 text-sm text-emerald-400 pt-1">
+            <Sparkles className="w-4 h-4" /> Alle uren tellen als extra
+          </div>
+        )}
         {todayEvent.work_from_home && (
           <div className="flex items-center gap-2 text-sm text-purple-400 pt-1">
             <HomeIcon className="w-4 h-4" /> Thuiswerken
@@ -364,9 +393,10 @@ function WeekStatsCard() {
     );
   }
 
-  const totalWorked = balance?.total_hours_worked || 0;  // Use actual hours from backend
+  const totalWorked = balance?.total_hours_worked || 0;
   const balanceHours = balance?.balance || 0;
   const expectedHours = user?.expected_weekly_hours || 0;
+  const extraHours = balance?.extra_hours || 0;
 
   return (
     <div className="bg-ofa-bg border border-neutral-800 rounded-lg p-6 space-y-4">
@@ -380,6 +410,14 @@ function WeekStatsCard() {
           <span className="text-sm text-gray-400">Verwacht</span>
           <span className="text-2xl font-bold text-white">{formatHoursMinutes(expectedHours)}</span>
         </div>
+        {extraHours > 0 && (
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-400 flex items-center gap-1">
+              <Sparkles className="w-3 h-3" /> Extra uren
+            </span>
+            <span className="text-lg font-bold text-emerald-400">+{formatHoursMinutes(extraHours)}</span>
+          </div>
+        )}
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-400">Saldo</span>
           <span className={`text-2xl font-bold ${balanceHours >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -425,7 +463,7 @@ function TeamTodayCard() {
         return { date: new Date().toISOString().split('T')[0], team: [] };
       }
     },
-    refetchInterval: 300000, // Refresh every 5 minutes
+    refetchInterval: 300000,
   });
 
   if (isLoading || !teamStatus) {
@@ -434,12 +472,12 @@ function TeamTodayCard() {
 
   const team = teamStatus.team;
 
-  // Count by status
   const present = team.filter((m: any) => m.status === 'present').length;
   const notClocked = team.filter((m: any) => m.status === 'not_clocked').length;
   const sick = team.filter((m: any) => m.status === 'sick').length;
   const vacation = team.filter((m: any) => m.status === 'vacation').length;
   const personal = team.filter((m: any) => m.status === 'personal').length;
+  const onHoliday = team.filter((m: any) => m.status === 'company_holiday').length;
 
   const totalOnLeave = sick + vacation + personal;
   const total = team.length;
@@ -461,7 +499,6 @@ function TeamTodayCard() {
         Team Vandaag ({total})
       </h2>
 
-      {/* Summary */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="bg-green-900/30 border border-green-500 rounded-lg p-3">
           <p className="text-xs text-green-200">Ingeklokt</p>
@@ -475,6 +512,13 @@ function TeamTodayCard() {
           </div>
         )}
 
+        {onHoliday > 0 && (
+          <div className="bg-emerald-900/30 border border-emerald-500 rounded-lg p-3">
+            <p className="text-xs text-emerald-200">Feestdag</p>
+            <p className="text-2xl font-bold text-emerald-400">{onHoliday}</p>
+          </div>
+        )}
+
         {totalOnLeave > 0 && (
           <div className="bg-blue-900/30 border border-blue-500 rounded-lg p-3">
             <p className="text-xs text-blue-200">Met Verlof</p>
@@ -483,7 +527,6 @@ function TeamTodayCard() {
         )}
       </div>
 
-      {/* Team members list */}
       <div className="space-y-2">
         {team.map((member: any) => (
           <div
@@ -520,6 +563,11 @@ function TeamTodayCard() {
                   <XCircle className="w-3 h-3" /> Niet ingeklokt
                 </span>
               )}
+              {member.status === 'company_holiday' && (
+                <span className="text-emerald-400 text-xs flex items-center gap-1 justify-end">
+                  <Sparkles className="w-3 h-3" /> Feestdag
+                </span>
+              )}
               {member.status === 'sick' && (
                 <span className="text-blue-400 text-xs flex items-center gap-1 justify-end">
                   <Activity className="w-3 h-3" /> Ziek
@@ -547,19 +595,15 @@ function TeamTodayCard() {
 export default function Home() {
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-white">Dashboard</h1>
         <p className="text-sm text-gray-400">{formatDateNL(new Date())}</p>
       </div>
 
-      {/* My Clock Status Card */}
       <ClockStatusCard />
 
-      {/* My Week Stats Card */}
       <WeekStatsCard />
 
-      {/* Team Today Card */}
       <TeamTodayCard />
     </div>
   );

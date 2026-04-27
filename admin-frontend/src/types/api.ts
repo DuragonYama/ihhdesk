@@ -109,6 +109,7 @@ export interface TodayStatus {
     clocked_in: number;
     on_leave: number;
     expected_missing: number;
+    on_holiday: number;
   };
   clocked_in: Array<{
     user_id: number;
@@ -133,6 +134,13 @@ export interface TodayStatus {
     username: string;
     email: string;
   }>;
+  on_holiday: Array<{
+    user_id: number;
+    username: string;
+    email: string;
+  }>;
+  is_holiday: boolean;
+  holiday_name: string | null;
 }
 
 export interface EventCategory {

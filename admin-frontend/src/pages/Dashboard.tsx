@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Users, CheckCircle, Activity, AlertTriangle, CircleDot, Circle, Car, Home as HomeIcon, ChevronDown, ChevronRight } from 'lucide-react';
+import { Users, CheckCircle, Activity, AlertTriangle, CircleDot, Circle, Car, Home as HomeIcon, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
 import { api } from '../utils/api';
 import type { TodayStatus, Absence } from '../types/api';
 
@@ -21,6 +21,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [showClockedIn, setShowClockedIn] = useState(true);
   const [showOnLeave, setShowOnLeave] = useState(true);
+  const [showHoliday, setShowHoliday] = useState(true);
   const [showMissing, setShowMissing] = useState(false);
 
   // Fetch today's status
@@ -149,12 +150,21 @@ export default function Dashboard() {
           icon={<Activity className="w-6 h-6 text-blue-400" />}
           color="bg-blue-900/30 border-blue-500/30"
         />
-        <StatCard
-          title="Verwacht maar Afwezig"
-          value={data.stats.expected_missing}
-          icon={<AlertTriangle className="w-6 h-6 text-yellow-400" />}
-          color="bg-yellow-900/30 border-yellow-500/30"
-        />
+        {data.is_holiday ? (
+          <StatCard
+            title="Feestdag"
+            value={data.stats.on_holiday}
+            icon={<Sparkles className="w-6 h-6 text-emerald-400" />}
+            color="bg-emerald-900/30 border-emerald-500/30"
+          />
+        ) : (
+          <StatCard
+            title="Verwacht maar Afwezig"
+            value={data.stats.expected_missing}
+            icon={<AlertTriangle className="w-6 h-6 text-yellow-400" />}
+            color="bg-yellow-900/30 border-yellow-500/30"
+          />
+        )}
       </div>
 
       {/* Clocked In Section */}
@@ -243,6 +253,33 @@ export default function Dashboard() {
                     <span className="font-medium">Reden:</span> {employee.reason}
                   </p>
                 )}
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* Holiday Section */}
+      {data.on_holiday.length > 0 && (
+        <Section
+          title={<span className="flex items-center gap-2"><Sparkles className="w-5 h-5 text-emerald-400" /> Feestdag{data.holiday_name ? `: ${data.holiday_name}` : ''}</span>}
+          count={data.on_holiday.length}
+          isOpen={showHoliday}
+          onToggle={() => setShowHoliday(!showHoliday)}
+        >
+          <div className="grid gap-3">
+            {data.on_holiday.map((employee) => (
+              <div
+                key={employee.user_id}
+                className="bg-emerald-900/20 border border-emerald-500/30 p-4 rounded-lg flex items-center gap-3"
+              >
+                <div className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center text-white font-bold">
+                  {employee.username.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-white font-medium">{employee.username}</p>
+                  <p className="text-gray-400 text-sm">{employee.email}</p>
+                </div>
               </div>
             ))}
           </div>
