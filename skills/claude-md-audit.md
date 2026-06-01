@@ -1,18 +1,18 @@
 # Skill: CLAUDE-MD-Audit
 
-Audit the entire codebase and compare against the current CLAUDE.md.
+Audit the entire codebase and compare against CLAUDE.md, docs/ARCHITECTURE.md, and docs/FEATURES.md.
 
-1. Read CLAUDE.md fully
+1. Read CLAUDE.md, docs/ARCHITECTURE.md, and docs/FEATURES.md fully
 2. Read CHANGES.md if it exists — these are recent implementation changes
-   not yet reflected in CLAUDE.md. Prioritize these before scanning.
+   not yet reflected in any doc. Prioritize these before scanning.
 3. Scan all source files — components, hooks, routes, features, new tools,
    context providers, API endpoints, DB models, migrations,
    docker-compose, config files
-4. Find everything implemented but missing or wrong in CLAUDE.md
-5. Update CLAUDE.md directly — add missing, correct wrong, remove outdated
+4. Find everything implemented but missing or wrong in any of the three doc files
+5. Update all three files directly — add missing, correct wrong, remove outdated
 6. Do not change existing structure or formatting, only content
-7. Delete CHANGES.md after all its contents are absorbed into CLAUDE.md
-8. Report what was added/changed when done
+7. Delete CHANGES.md after all its contents are absorbed
+8. Report what was added/changed across all three files when done
 
 ## Data Flows Section
 If CLAUDE.md does not have a Data Flows section, create one.

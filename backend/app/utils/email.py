@@ -1,6 +1,7 @@
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from app.config import settings
+from fastapi.concurrency import run_in_threadpool
 
 async def send_email(to_email: str, subject: str, body: str):
     """Send email via SendGrid"""
@@ -14,7 +15,7 @@ async def send_email(to_email: str, subject: str, body: str):
     
     try:
         sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
-        response = sg.send(message)
+        response = await run_in_threadpool(sg.send, message)
         print(f"Email sent! Status: {response.status_code}")
         return True
     except Exception as e:

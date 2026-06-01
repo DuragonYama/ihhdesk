@@ -54,5 +54,5 @@ Do NOT do this before the acceptance criteria are checked.
 
 ## Usage:
 Add "invoke post-implementation-capture" at the end of any implement-task
-prompt. Claude Code runs this after all acceptance criteria are checked.
+prompt. The implementation agent runs this after all acceptance criteria are checked.
 Output: appended block in CHANGES.md in project root.

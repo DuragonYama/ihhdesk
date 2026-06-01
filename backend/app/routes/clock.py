@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List, Optional
@@ -462,6 +462,7 @@ async def update_clock_event(
 @router.patch("/{event_id}/approve")
 async def approve_clock_event(
     event_id: int,
+    background_tasks: BackgroundTasks,
     request_data: dict = {},
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin)
@@ -507,20 +508,22 @@ Bericht van admin:
 Groeten,
 HR Team"""
 
-            await send_email(
+            background_tasks.add_task(
+                send_email,
                 to_email=user.email,
                 subject="Uurregistratie Goedgekeurd",
                 body=body
             )
         except Exception as e:
-            print(f"Failed to send approval email: {e}")
+            print(f"Failed to build approval email: {e}")
 
     # Send push notification
     if user:
         try:
             subscriptions = db.query(PushSubscription).filter(PushSubscription.user_id == user.id).all()
             for sub in subscriptions:
-                await send_push(
+                background_tasks.add_task(
+                    send_push,
                     endpoint=sub.endpoint,
                     p256dh=sub.p256dh,
                     auth=sub.auth,
@@ -528,13 +531,14 @@ HR Team"""
                     body=f"Je uurregistratie voor {event.date.strftime('%d-%m-%Y')} is goedgekeurd."
                 )
         except Exception as e:
-            print(f"Failed to send push notification: {e}")
+            print(f"Failed to prepare push notification: {e}")
 
     return clock_event_to_dict(event)
 
 @router.delete("/{event_id}")
 async def delete_clock_event(
     event_id: int,
+    background_tasks: BackgroundTasks,
     request_data: dict = {},
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -590,19 +594,21 @@ Neem contact op met HR voor meer informatie.
 Groeten,
 HR Team"""
 
-            await send_email(
+            background_tasks.add_task(
+                send_email,
                 to_email=user.email,
                 subject="Uurregistratie Afgewezen",
                 body=body
             )
         except Exception as e:
-            print(f"Failed to send rejection email: {e}")
+            print(f"Failed to build rejection email: {e}")
 
         # Send push notification for rejection
         try:
             subscriptions = db.query(PushSubscription).filter(PushSubscription.user_id == user.id).all()
             for sub in subscriptions:
-                await send_push(
+                background_tasks.add_task(
+                    send_push,
                     endpoint=sub.endpoint,
                     p256dh=sub.p256dh,
                     auth=sub.auth,
@@ -610,7 +616,7 @@ HR Team"""
                     body=f"Je uurregistratie voor {event_date} is afgewezen."
                 )
         except Exception as e:
-            print(f"Failed to send push notification: {e}")
+            print(f"Failed to prepare push notification: {e}")
 
     return {"message": "Clock event deleted"}
 @router.patch("/{event_id}/edit")

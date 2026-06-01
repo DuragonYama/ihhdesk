@@ -1,9 +1,9 @@
 # Skill: Acceptance-Criteria
 
-Append a verification checklist to the TASK file before it goes to Claude Code.
+Append a verification checklist to the TASK file before it goes to an implementation agent.
 
 This skill is NOT a separate step — it is appended to every codebase-research
-or new-feature-plan prompt so Flash includes it automatically.
+or new-feature-plan prompt so the generated TASK file includes it automatically.
 
 ## Add this section to every TASK file generated:
 
@@ -12,7 +12,7 @@ or new-feature-plan prompt so Flash includes it automatically.
 ## Acceptance Criteria
 
 How to verify this task is fully and correctly implemented.
-Claude Code must check every item before calling the task done.
+The implementation agent must check every item before calling the task done.
 
 ### Functional checks (does it work?)
 - [ ] [specific thing the user can do or see that confirms the feature works]
@@ -35,7 +35,7 @@ Claude Code must check every item before calling the task done.
 
 ---
 
-## Rules for Flash when generating acceptance criteria:
+## Rules for generating acceptance criteria:
 - Be specific to THIS task — no generic placeholders
 - Every check must be something a developer can verify in under 60 seconds
 - Include at least one negative check for any auth or payment change
@@ -45,4 +45,4 @@ Claude Code must check every item before calling the task done.
 ## Usage:
 Add "invoke acceptance-criteria" at the end of any codebase-research
 or new-feature-plan prompt.
-Flash will append the Acceptance Criteria section to the TASK file.
+The planning agent will append the Acceptance Criteria section to the TASK file.

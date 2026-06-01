@@ -2,13 +2,15 @@
 import json
 from pywebpush import webpush, WebPushException
 from app.config import settings
+from fastapi.concurrency import run_in_threadpool
 
 
 async def send_push(endpoint: str, p256dh: str, auth: str, title: str, body: str) -> bool:
     """Send a single Web Push notification. Returns True on success."""
     payload = json.dumps({"title": title, "body": body})
     try:
-        webpush(
+        await run_in_threadpool(
+            webpush,
             subscription_info={
                 "endpoint": endpoint,
                 "keys": {"p256dh": p256dh, "auth": auth},

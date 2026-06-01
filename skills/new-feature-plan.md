@@ -46,9 +46,9 @@ architecture, and conventions.
   patterns (map, spread)
 - Always show error propagation to state, never `.catch(console.error)` alone
 - If a snippet touches shared state, note race condition risks explicitly
-- New interfaces and types must be defined in the plan, not left for CC to infer
+- New interfaces and types must be defined in the plan, not left for the implementation agent to infer
 
-`This plan will be executed by an AI coding agent. Code snippets must be
+`This plan will be executed by an implementation agent. Code snippets must be
 unambiguous and production-ready — the implementer will follow them literally.`
 
 ## Usage:

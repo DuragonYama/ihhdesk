@@ -1,18 +1,18 @@
 # Skill: Task-Review
 
 Review a TASK-*.md file for structural errors, logical gaps, and
-implementation risks before handing to Claude Code.
+implementation risks before handing it to an implementation agent.
 
 ## Two Modes
 
-### Haiku Mode (review only)
+### Review-Only Mode
 Do NOT rewrite the task. Do NOT implement anything.
 Flag issues only. Output a REVIEW-[task-name].md in the project root.
 
-### Sonnet Mode (review + fix)
+### Fix Mode
 Review the task, then fix all issues directly in the TASK file.
 Do NOT output a REVIEW file. Update the TASK file in place.
-Make it unambiguous and implementation-ready for Claude Code.
+Make it unambiguous and implementation-ready.
 
 ---
 
@@ -21,8 +21,8 @@ Make it unambiguous and implementation-ready for Claude Code.
    table names, DB schema, and existing patterns.
 2. Read the TASK file fully.
 3. Check every section against the checklist below.
-4. **Haiku**: output REVIEW file grouped by severity.
-   **Sonnet**: fix all issues directly in the TASK file, report what changed.
+4. **Review-Only Mode**: output REVIEW file grouped by severity.
+   **Fix Mode**: fix all issues directly in the TASK file, report what changed.
 
 ## Review Checklist
 
@@ -63,14 +63,14 @@ Make it unambiguous and implementation-ready for Claude Code.
 
 ---
 
-## Haiku Output Format
+## Review-Only Output Format
 
 ### REVIEW-[task-name].md
 
 **Verdict**: PASS / PASS WITH FIXES / FAIL
 
 **Critical (blocks implementation)**
-- [issue] — [why it breaks] — [what to fix, specific enough for Flash to act on without re-reading the codebase]
+- [issue] — [why it breaks] — [what to fix, specific enough for a planning agent to act on without re-reading the codebase]
 
 **High (likely to cause bugs)**
 - [issue] — [why it matters] — [suggested fix]
@@ -86,32 +86,32 @@ Make it unambiguous and implementation-ready for Claude Code.
 
 **Assumptions to verify**
 - List any assumption in the TASK file that should be confirmed
-  before Claude Code proceeds
+  before implementation proceeds
 
 ---
 
-## Sonnet Output Format
+## Fix Mode Output Format
 
 No REVIEW file. Update the TASK file directly.
 After updating, report:
 - What was fixed and where
 - Any assumptions made during fixes
-- Anything that still needs developer confirmation before Claude Code proceeds
+- Anything that still needs developer confirmation before implementation proceeds
 
 ---
 
 ## Rules:
 - CLAUDE.md is the source of truth — if the task contradicts it, fix it
-- Haiku: flag and describe with enough specificity that Flash can fix each
+- Review-Only Mode: flag and describe with enough specificity that a planning agent can fix each
   item without re-reading the codebase
-- Sonnet: fix directly, follow existing CLAUDE.md patterns, never invent
+- Fix Mode: fix directly, follow existing CLAUDE.md patterns, never invent
   new conventions
-- A PASS verdict means Claude Code can proceed without changes
-- A PASS WITH FIXES verdict means proceed to Sonnet, do not loop back to Flash
-- A FAIL verdict means go back to Flash for revision
+- A PASS verdict means implementation can proceed without changes
+- A PASS WITH FIXES verdict means proceed to Fix Mode rather than replanning
+- A FAIL verdict means go back to the planning agent for revision
 
 ## Usage:
-**Haiku**: paste CLAUDE.md + TASK file. Output REVIEW file.
-  Run after every Flash TASK file. Loop Flash → Haiku until PASS WITH FIXES or PASS.
-**Sonnet**: paste CLAUDE.md + TASK file. Fix TASK file directly.
-  Run once as final gate before Claude Code. Then /clear and implement.
+**Review-Only Mode**: paste CLAUDE.md + TASK file. Output REVIEW file.
+  Run after every generated TASK file. Loop planning → review until PASS WITH FIXES or PASS.
+**Fix Mode**: paste CLAUDE.md + TASK file. Fix TASK file directly.
+  Run once as the final gate before implementation.

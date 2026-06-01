@@ -31,4 +31,4 @@ Describe the bug after invoking this skill.
 Include: what you did, what happened, what you expected.
 Error messages and console logs are very helpful.
 
-`This plan will be executed by an AI coding agent. Code snippets must be unambiguous and production-ready — the implementer will follow them literally.`
+`This plan will be executed by an implementation agent. Code snippets must be unambiguous and production-ready — the implementer will follow them literally.`
